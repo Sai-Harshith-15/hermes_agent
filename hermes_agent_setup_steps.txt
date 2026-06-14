@@ -1,0 +1,55 @@
+hermes agent setup the ubutu server and need to install the hermes agent and i have the open router api keys multiple accounts, opencode api keys multiple accounts so based on the free keys and passing the free, high based models api's we need another agent which is a top layer which need to check each and every agent is running smoothly without any issues or not if the agent is facing issues with the rate limiting, timeouts from the response after 10 retries then need to pass another api jkey and start working ok so based on this and also monitore how many api keys we have suppose i have the opencode 5 apikeys of different accounts so 5 agents are running and using the same api key means it need to distribute these unused apikeys to them and help them to run smoothly. so for this purpose we need a parent agent which will monitor all child agents and it is main agnet for this agent i will give local llm like gemma 4 4b model by using ollama i will install it locally ok and for the pai keys and llm api's, models managing accross all sub agents need a super agent for this in every domain. this parent agent will manage the llms api's same like this the lead agents for each domain like for SWE main agent will be a Manager, Team Lead which will observers the tasks and manages what there sub working agents needs any issues and runs in loops hell and debugging and helusinating while coding so based on that we need to observed them aswell ok for this we need supervisor agnet for that domain (SWE). same for youtube aswell we need the YouTube superviour which have teh knowledge of the youtube contnet and the categories knowledge and the agents need the skills of multiple agents which are video editor, voice agent, content writer agent, gudelines agent this format video does not has any copywrite issues are not, market analyzer agent who check the markets trends 24/7 using the x, other platforms ok. currently the SWE and Youtube is our target so based on this i need a diagram of this workflow and explain me indetail how i can able to setup this and i need teh system design architecture how can i manage the each and every pipeline and each and every agents tasks so based on that i need you to explain from hermes agent setup in oracle free tier server plan and we need to run the server 24/7 and under the 10% or more usage base on there guide lines ok. so explain me in detail this architecture of hermes agent how i can bel to setup these and make sure our entire goal to make the money from this agents with free resources only ok so based on that they need to work 24/7 ok. so explain me in detail setp wise ok. how you will explain for 15 years old kid ok.
+
+
+
+
+================================================================================
+                 LAYER 1: SYSTEM ORCHESTRATION (The Pulse)
+================================================================================
+                          [ company_loop.sh ]
+                                   |
+             (The 24/7 bash script that wakes up the agents)
+                                   |
+================================================================================
+                 LAYER 2: DOMAIN SUPERVISORS (The Managers)
+                   Powered by FREE Local AI to save keys
+================================================================================
+                                   |
+         +-------------------------+-------------------------+
+         |                                                   |
+ [ SWE Supervisor ]                                [ YouTube Supervisor ]
+   (swe_lead)                                          (yt_lead)
+   (Monitors code, checks loops)                       (Checks scripts, guides flow)
+         |                                                   |
+================================================================================
+                 LAYER 3: SPECIALIZED WORKERS (The Sub-Agents)
+                   Powered by Free API Keys via the Proxy
+================================================================================
+         |                                                   |
+         |-- Product Manager                                 |-- Market Trends Analyzer
+         |-- System Architect (API/Systems)                  |-- Content Writer
+         |-- System Designer (High level)                    |-- Copyright/Guidelines Checker
+         |-- UI/UX Designer                                  |-- Voice Agent (Edge-TTS python)
+         |-- Frontend Expert                                 |-- Video Editor (FFmpeg terminal)
+         |-- Backend Expert 
+         |-- DB Architect (SQL/Postgres)
+         |-- QA Lead (Testing)
+         |-- DevOps/Pipeline Expert (GitHub Actions)
+         |-- App Deployer
+         |-- Mobile Developer
+         |-- Data Engineer
+         
+================================================================================
+                 LAYER 4: RESOURCE & API MANAGEMENT (The Engine Room)
+                      Running on Oracle Free Tier Ubuntu
+================================================================================
+
+  [ Oracle 24GB ARM Server ] --> Must stay >10% CPU usage (Loop ensures this)
+         |
+         +-- [ Local Brain ] --> Ollama (Gemma 9B) 
+         |                       * Handles Layer 2 Supervisors 100% free locally
+         |
+         +-- [ Traffic Cop ] --> LiteLLM Proxy (http://localhost:4000)
+                                 * Handles Layer 3 Workers seamlessly
+                                 ├── Pool A: 5x OpenCode API Keys (For coding)
+                                 └── Pool B: 3x OpenRouter API Keys (For writing)

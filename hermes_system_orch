@@ -1,0 +1,50 @@
+================================================================================
+                 LAYER 1: SYSTEM ORCHESTRATION (The Pulse)
+================================================================================
+                          [ company_loop.sh ]
+                                   |
+             (The 24/7 bash script that wakes up the agents)
+                                   |
+================================================================================
+                 LAYER 2: DOMAIN SUPERVISORS (The Managers)
+                   Powered by FREE Local AI to save keys
+================================================================================
+                                   |
+         +-------------------------+-------------------------+
+         |                                                   |
+ [ SWE Supervisor ]                                [ YouTube Supervisor ]
+   (swe_lead)                                          (yt_lead)
+   (Monitors code, checks loops)                       (Checks scripts, guides flow)
+         |                                                   |
+================================================================================
+                 LAYER 3: SPECIALIZED WORKERS (The Sub-Agents)
+                   Powered by Free API Keys via the Proxy
+================================================================================
+         |                                                   |
+         |-- Product Manager                                 |-- Market Trends Analyzer
+         |-- System Architect (API/Systems)                  |-- Content Writer
+         |-- System Designer (High level)                    |-- Copyright/Guidelines Checker
+         |-- UI/UX Designer                                  |-- Voice Agent (Edge-TTS python)
+         |-- Frontend Expert                                 |-- Video Editor (FFmpeg terminal)
+         |-- Backend Expert 
+         |-- DB Architect (SQL/Postgres)
+         |-- QA Lead (Testing)
+         |-- DevOps/Pipeline Expert (GitHub Actions)
+         |-- App Deployer
+         |-- Mobile Developer
+         |-- Data Engineer
+         
+================================================================================
+                 LAYER 4: RESOURCE & API MANAGEMENT (The Engine Room)
+                      Running on Oracle Free Tier Ubuntu
+================================================================================
+
+  [ Oracle 24GB ARM Server ] --> Must stay >10% CPU usage (Loop ensures this)
+         |
+         +-- [ Local Brain ] --> Ollama (Gemma 9B) 
+         |                       * Handles Layer 2 Supervisors 100% free locally
+         |
+         +-- [ Traffic Cop ] --> LiteLLM Proxy (http://localhost:4000)
+                                 * Handles Layer 3 Workers seamlessly
+                                 ├── Pool A: 5x OpenCode API Keys (For coding)
+                                 └── Pool B: 3x OpenRouter API Keys (For writing)
