@@ -1,0 +1,90 @@
+version: "3.9"
+
+services:
+  # 1. Cloudflare Tunnel (Quick Tunnel)
+  tunnel:
+    container_name: hermes_tunnel
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    # We pipe stderr to a shared volume so the backend can read the URL
+    command: sh -c "cloudflared tunnel --url http://nginx:80 2>&1 | tee /shared/tunnel.log"
+    networks:
+      - hermes-network
+    depends_on:
+      - nginx
+    volumes:
+      - shared_data:/shared
+
+  # 2. Nginx Reverse Proxy (Serves Frontend & Proxies API)
+  nginx:
+    container_name: hermes_nginx
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    ports:
+      - "8080:80" # Exposed locally for testing
+    depends_on:
+      - api
+      - frontend
+    restart: unless-stopped
+    networks:
+      - hermes-network
+    volumes:
+      - frontend_build:/usr/share/nginx/html
+
+  # 3. FastAPI Backend
+  api:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    container_name: hermes_api
+    expose:
+      - "8000"
+    volumes:
+      - ./backend:/app
+      - shared_data:/shared
+      - ~/.hermes:/root/.hermes # Mount the hermes directory for config/sandbox
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+    networks:
+      - hermes-network
+    depends_on:
+      - postgres
+
+  # 4. React Frontend (Built and Served)
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    container_name: hermes_frontend
+    # This container just builds the static files to a shared volume for nginx to serve
+    volumes:
+      - frontend_build:/app/dist
+    command: sh -c "npm run build && cp -r dist/* /app/dist/"
+    networks:
+      - hermes-network
+
+  # 5. Postgres Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: hermes_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-QzVih34G-rO5Y31r2WQHEw}
+      POSTGRES_DB: ${DB_NAME:-sample-db}
+    ports:
+      - "5432:5432"
+    networks:
+      - hermes-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  shared_data:
+  frontend_build:
+  postgres_data:
+
+networks:
+  hermes-network:
+    driver: bridge

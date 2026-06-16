@@ -1,22 +1,26 @@
-import os
-from sqlmodel import SQLModel, create_engine, Session
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from sqlmodel import SQLModel
 
-# Environment variable check for PostgreSQL URL, fallback to SQLite
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL", 
-    "sqlite:///./hermes_monitor.db"
+from app.core.config import settings
+
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=False,
+    future=True,
+    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
 )
 
-# SQLite specific config
-connect_args = {}
-if DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+async_session_maker = sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
+)
 
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
-
-def init_db():
-    SQLModel.metadata.create_all(engine)
-
-def get_session():
-    with Session(engine) as session:
+async def get_db():
+    async with async_session_maker() as session:
         yield session
+
+async def init_db():
+    async with engine.begin() as conn:
+        # We rely on Alembic, but we can do a create_all for initial scaffolding if needed
+        # await conn.run_sync(SQLModel.metadata.create_all)
+        pass

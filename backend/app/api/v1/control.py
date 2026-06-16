@@ -1,0 +1,32 @@
+from fastapi import APIRouter
+from pydantic import BaseModel
+from app.services.hermes.control_adapter import HermesControlAdapter
+
+router = APIRouter()
+adapter = HermesControlAdapter()
+
+class InjectTaskRequest(BaseModel):
+    task_spec: str
+    priority: str = "normal"
+
+class SteerAgentRequest(BaseModel):
+    agent_name: str
+    message: str
+
+class PauseAgentRequest(BaseModel):
+    agent_name: str
+
+@router.post("/inject-task")
+def inject_task(req: InjectTaskRequest):
+    intent = adapter.inject_task(req.task_spec, req.priority)
+    return {"status": "success", "intent": intent}
+
+@router.post("/steer-agent")
+def steer_agent(req: SteerAgentRequest):
+    intent = adapter.steer_agent(req.agent_name, req.message)
+    return {"status": "success", "intent": intent}
+
+@router.post("/pause-agent")
+def pause_agent(req: PauseAgentRequest):
+    intent = adapter.pause_agent(req.agent_name)
+    return {"status": "success", "intent": intent}
