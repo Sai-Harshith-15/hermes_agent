@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8000/api/v1';
+import { API_BASE_URL as BASE_URL } from './client';
 
 export const controlApi = {
   injectTask: async (task_spec: string, priority: string = "normal") => {

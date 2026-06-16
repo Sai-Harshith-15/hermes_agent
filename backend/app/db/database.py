@@ -21,6 +21,4 @@ async def get_db():
 
 async def init_db():
     async with engine.begin() as conn:
-        # We rely on Alembic, but we can do a create_all for initial scaffolding if needed
-        # await conn.run_sync(SQLModel.metadata.create_all)
-        pass
+        await conn.run_sync(SQLModel.metadata.create_all)

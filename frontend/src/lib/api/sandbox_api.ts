@@ -1,4 +1,5 @@
-const BASE_URL = 'http://localhost:8000/api/v1/sandbox';
+import { API_BASE_URL } from './client';
+const BASE_URL = `${API_BASE_URL}/sandbox`;
 
 export const sandboxApi = {
   listFiles: async (path: string = "") => {

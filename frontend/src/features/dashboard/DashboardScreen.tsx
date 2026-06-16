@@ -1,5 +1,4 @@
-import React from 'react';
-import { Activity, Server, HardDrive, Cpu, AlertTriangle, Bot, CheckCircle, Clock, Play, Square } from 'lucide-react';
+import { Activity, Server, HardDrive, Cpu, AlertTriangle, Bot, Clock, Play, Square } from 'lucide-react';
 import { useDashboardStore } from '../../store/dashboardStore';
 
 export function DashboardScreen() {

@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Activity, LayoutDashboard, Terminal, Kanban, Key, Bot, 
-  Network, Database, Globe, Settings, LogOut, Search, Plus, 
-  Play, Square, Server, HardDrive, Cpu, AlertTriangle, 
-  CheckCircle, Clock, ChevronRight, MessageSquare, Edit3, Save,
+  Network, Database, Globe, Settings, LogOut,
+  ChevronRight, 
   Tv, Link, Shield, Puzzle, Zap, Box, History, MessageCircle,
-  ToggleLeft, Trash2, DownloadCloud, ShieldAlert
+  ShieldAlert
 } from 'lucide-react';
 
 import { WS_BASE_URL, fetchDashboardState } from './lib/api/client';
+import { useDashboardStore } from './store/dashboardStore';
+import { AppRoutes } from './routes';
 import { login as apiLogin, fetchMe } from './lib/api/auth';
 
 export default function AgentCommandCenter() {
@@ -95,7 +96,7 @@ export default function AgentCommandCenter() {
         setTimeout(connectWS, 5000);
       };
 
-      ws.onerror = (err) => {
+      ws.onerror = () => {
         ws.close();
       };
     };

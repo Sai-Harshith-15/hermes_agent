@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { 
-  Activity, LayoutDashboard, Terminal, Kanban, Key, Bot, 
-  Network, Database, Globe, Settings, LogOut, Search, Plus, 
-  Play, Square, Server, HardDrive, Cpu, AlertTriangle, 
-  CheckCircle, Clock, ChevronRight, MessageSquare, Edit3, Save,
-  Tv, Link, Shield, Puzzle, Zap, Box, History, MessageCircle,
-  ToggleLeft, Trash2, DownloadCloud
+  Terminal, Bot, 
+  Database, Globe, Settings, Search, Plus, 
+  CheckCircle, Clock, Edit3, Save,
+  Tv, Link, Shield, ToggleLeft
 } from 'lucide-react';
 import { useDashboardStore } from '../../store/dashboardStore';
 import { addApiKey } from '../../lib/api/client';
@@ -227,7 +225,7 @@ export function ProfilesScreen() {
           <button className="p-1 hover:bg-gray-700 rounded text-gray-400 transition-colors"><Plus size={16}/></button>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
-          {defaultProfiles.map((p, i) => (
+          {defaultProfiles.map((p: any, i: number) => (
             <div 
               key={p.id || i} 
               onClick={() => setSelectedProfile(p)}
@@ -317,7 +315,7 @@ export function ProfilesScreen() {
 
 export function ObsidianScreen() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { data: searchResults = [], isLoading } = useQuery({
+  const { data: searchResults = [] } = useQuery({
     queryKey: ['memorySearch', searchQuery],
     queryFn: () => hermesApi.searchMemory(searchQuery),
     enabled: searchQuery.length > 2
@@ -353,7 +351,7 @@ export function ObsidianScreen() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {memoryLogs.length > 0 ? (
-            memoryLogs.map((log, idx) => (
+            memoryLogs.map((log: any, idx: number) => (
               <div key={idx} className="bg-gray-950 border border-gray-800 p-5 rounded-lg hover:border-gray-600 transition-colors cursor-pointer group">
                 <div className="flex justify-between items-start mb-3">
                   <span className="text-xs font-mono text-purple-400 bg-purple-500/10 px-2 py-1 rounded">#sqlite</span>
@@ -415,7 +413,7 @@ export function SessionsScreen() {
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {sessionsToDisplay.map((sess, i) => (
+        {sessionsToDisplay.map((sess: any, i: number) => (
           <div key={sess.id || i} className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm relative overflow-hidden">
             <div className={`absolute top-0 left-0 w-1 h-full ${sess.status === 'Active' ? 'bg-emerald-500' : 'bg-gray-600'}`}></div>
             <div className="flex justify-between items-start mb-4">

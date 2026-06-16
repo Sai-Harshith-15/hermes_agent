@@ -1,5 +1,5 @@
-export const API_BASE_URL = 'http://localhost:8000/api/v1';
-export const WS_BASE_URL = 'ws://localhost:8000/ws/telemetry';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+export const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/telemetry`;
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem('token');
@@ -31,5 +31,19 @@ export async function addApiKey(keyData: any) {
   return fetchApi('/telemetry/key', {
     method: 'POST',
     body: JSON.stringify(keyData),
+  });
+}
+
+export async function sendAdminIntervention(command: string) {
+  return fetchApi('/admin/intervene', {
+    method: 'POST',
+    body: JSON.stringify({ command }),
+  });
+}
+
+export async function injectTask(taskData: any) {
+  return fetchApi('/tasks', {
+    method: 'POST',
+    body: JSON.stringify(taskData),
   });
 }

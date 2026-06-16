@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Terminal, MessageSquare, Folder, File as FileIcon, ChevronRight, ChevronDown, Save } from 'lucide-react';
+import { Terminal, MessageSquare, Folder, File as FileIcon, Save } from 'lucide-react';
 import { useDashboardStore } from '../../store/dashboardStore';
 import { sendAdminIntervention } from '../../lib/api/client';
 import { sandboxApi } from '../../lib/api/sandbox_api';

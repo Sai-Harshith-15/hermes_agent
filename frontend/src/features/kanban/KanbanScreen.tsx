@@ -1,4 +1,3 @@
-import React from 'react';
 import { Plus } from 'lucide-react';
 import { injectTask } from '../../lib/api/client';
 import { useDashboardStore } from '../../store/dashboardStore';
