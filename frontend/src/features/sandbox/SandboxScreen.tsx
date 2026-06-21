@@ -14,7 +14,7 @@ export function SandboxScreen() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState('');
 
-  const { data: files = [], refetch: refetchFiles, isError, error } = useQuery({
+  const { data: files = [], refetch: refetchFiles, isError } = useQuery({
     queryKey: ['sandbox_files', currentPath],
     queryFn: () => sandboxApi.listFiles(currentPath)
   });
