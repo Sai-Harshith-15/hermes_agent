@@ -40,14 +40,13 @@ async def delete_checkpoint(filename: str):
     """
     Safely deletes a checkpoint file from the rollback directory.
     """
-    # Prevent path traversal
-    if "/" in filename or "\\" in filename or ".." in filename:
-        raise HTTPException(status_code=400, detail="Invalid filename")
-
-    file_path = pathlib.Path(os.path.expanduser("~/.hermes/rollback")) / filename
+    # CRITICAL: Strips out any "../" path traversal attacks
+    secure_filename = os.path.basename(filename) 
     
-    try:
-        file_path.unlink(missing_ok=True)
-        return {"status": "success", "message": f"Deleted {filename}"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to delete checkpoint: {str(e)}")
+    target_path = os.path.join(os.path.expanduser("~/.hermes/rollback"), secure_filename)
+    
+    if os.path.exists(target_path):
+        os.remove(target_path)
+        return {"status": "success", "deleted": secure_filename}
+    
+    raise HTTPException(status_code=404, detail="File not found")

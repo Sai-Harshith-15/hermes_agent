@@ -113,9 +113,14 @@ import os
 mimetypes.add_type('application/javascript', '.js')
 
 # Mount Plugin static files
-plugins_dir = os.path.expanduser("~/.hermes/plugins")
-os.makedirs(plugins_dir, exist_ok=True)
-app.mount("/api/plugins-static", StaticFiles(directory=plugins_dir), name="plugins")
+# CRITICAL: Prevents boot crashes on fresh deployments
+plugin_dir = os.path.expanduser("~/.hermes/plugins")
+rollback_dir = os.path.expanduser("~/.hermes/rollback")
+os.makedirs(plugin_dir, exist_ok=True)
+os.makedirs(rollback_dir, exist_ok=True)
+
+# NOW it is safe to mount and scan
+app.mount("/api/plugins-static", StaticFiles(directory=plugin_dir), name="plugins")
 
 # Mount React static files
 frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend", "dist")

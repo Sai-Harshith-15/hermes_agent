@@ -4,6 +4,7 @@ services:
   # 1. The Hermes Mission Control Dashboard (Backend + Frontend)
   hermes-mission-control:
     build: .
+    pid: "host"
     container_name: hermes_mission_control
     restart: unless-stopped
     ports:
