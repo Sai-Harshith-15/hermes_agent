@@ -15,9 +15,11 @@ The backend acts as the Mission Control Gateway for the Hermes Agent. Built with
      - `/ws/telemetry` for frontend clients to receive live telemetry updates.
    - **API Routes:** `/api/v1/sandbox`, `/api/v1/warden`, etc., exposing internal Hermes adapters to the frontend.
 
-## [SPECIFICATION - PENDING IMPLEMENTATION]
-*The following features are designed but not yet implemented in the codebase:*
-- **Embedded PTY Terminal:** A WebSocket endpoint (`/api/pty`) designed to spawn `hermes --tui` behind a POSIX pseudo-terminal for `xterm.js` integration in the frontend.
+## Implemented Features
+- **Embedded PTY Terminal:** A WebSocket endpoint (`/api/pty`) implemented using Python's `pty` and `subprocess` modules that spawns `hermes --tui` behind a POSIX pseudo-terminal for `@xterm/xterm` integration in the frontend.
+
+## Universal Single-Port Deployment
+- The FastAPI application utilizes `StaticFiles` to serve the built React frontend (`/dist`) directly from the root `/` path. This entirely bypasses tunnel mapping and CORS issues when deployed behind Cloudflare Tunnels or other proxies.
 2. **Adapters (`backend/app/services/hermes/`)**
    - `HermesStateAdapter`: Reads the `hermes_state.db` SQLite file for token counts, session history, and cost metrics.
    - `HermesConfigAdapter`: Reads/writes `~/.hermes/config.yaml` and `~/.hermes/.env` using the real Hermes file format.

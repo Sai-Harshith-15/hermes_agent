@@ -129,6 +129,7 @@ export default function AgentCommandCenter() {
         <nav className="flex-1 overflow-y-auto py-4 custom-scrollbar">
           <NavSection title="System Overview">
             <NavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" current={currentScreen} set={(id) => navigate(`/${id}`)} />
+            <NavItem id="terminal" icon={Terminal} label="Hermes Dashboard" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="warden" icon={ShieldAlert} label="Warden Overseer" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="tunnels" icon={Globe} label="Tunnels & Deploy" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="channels" icon={Tv} label="Output Channels" current={currentScreen} set={(id) => navigate(`/${id}`)} />

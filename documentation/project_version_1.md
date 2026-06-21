@@ -14,7 +14,8 @@ A central Mission Control dashboard for your Hermes Agent. Built as a sleek Reac
 To achieve a true 1:1 parity with the actual Hermes systems, the following roadmap is being executed:
 
 ### Phase 1 — Core (Highest Priority)
-1. **Embedded Chat / PTY Terminal:** The most critical gap. Implementing `xterm.js` in the frontend coupled with a PTY WebSocket in the backend to spawn `hermes --tui`. This enables direct agent interaction.
+1. ✅ **Embedded Chat / PTY Terminal:** Implemented `@xterm/xterm` in the frontend coupled with a PTY WebSocket (`/api/pty`) in the backend. Integrates `hermes --tui` seamlessly into the "Hermes Dashboard" view.
+1.5 ✅ **Single-Port & Tunnel Architecture:** FastAPI natively serves the Vite static build on `/`, providing instant Cloudflare Tunnel compatibility without hardcoded ports.
 2. **Sessions Detail View:** Full message history with color-coded roles, tool call expansion, and FTS5 search capabilities against the SQLite database.
 3. **Real Config Read/Write:** Direct `.env` and `config.yaml` management aligned with Hermes's native file structures.
 

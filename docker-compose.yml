@@ -1,90 +1,26 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  tunnel:
-    container_name: mayura_tunnel
+  # 1. The Hermes Mission Control Dashboard (Backend + Frontend)
+  hermes-mission-control:
+    build: .
+    container_name: hermes_mission_control
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # CRITICAL: Maps the host's actual Hermes data into the dashboard
+      - ~/.hermes:/root/.hermes
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+
+  # 2. Automated Cloudflare Tunnel
+  cloudflare-tunnel:
     image: cloudflare/cloudflared:latest
+    container_name: hermes_tunnel
     restart: unless-stopped
-    command: tunnel --url http://nginx:80
-    networks:
-      - app-network
+    # Automatically routes public traffic to the Mission Control container
+    command: tunnel --url http://hermes-mission-control:8000
     depends_on:
-      - nginx
-
-  # 2. Nginx Reverse Proxy (Serves Frontend & Proxies API)
-  nginx:
-    container_name: hermes_nginx
-    build:
-      context: .
-      dockerfile: docker/nginx/Dockerfile
-    ports:
-      - "8080:80" # Exposed locally for testing
-    depends_on:
-      - api
-      - frontend
-    restart: unless-stopped
-    networks:
-      - app-network
-    volumes:
-      - frontend_build:/usr/share/nginx/html
-
-  # 3. FastAPI Backend
-  api:
-    build:
-      context: .
-      dockerfile: docker/backend/Dockerfile
-    container_name: hermes_api
-    env_file:
-      - .env
-    environment:
-      - DB_HOST=postgres
-    expose:
-      - "8000"
-    volumes:
-      - ./backend:/app
-      - shared_data:/shared
-      - ~/.hermes:/root/.hermes # Mount the hermes directory for config/sandbox
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    restart: unless-stopped
-    networks:
-      - app-network
-    depends_on:
-      - postgres
-
-  # 4. React Frontend (Built and Served)
-  frontend:
-    build:
-      context: .
-      dockerfile: docker/frontend/Dockerfile
-    container_name: hermes_frontend
-    # This container just builds the static files to a shared volume for nginx to serve
-    volumes:
-      - frontend_build:/app/dist
-    command: npm run build
-    networks:
-      - app-network
-
-  # 5. Postgres Database
-  postgres:
-    image: postgres:15-alpine
-    container_name: hermes_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-QzVih34G-rO5Y31r2WQHEw}
-      POSTGRES_DB: ${DB_NAME:-sample-db}
-    ports:
-      - "5432:5432"
-    networks:
-      - app-network
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  shared_data:
-  frontend_build:
-  postgres_data:
-
-networks:
-  app-network:
-    driver: bridge
+      - hermes-mission-control

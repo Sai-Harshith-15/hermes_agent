@@ -2,6 +2,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 import { DashboardScreen } from './features/dashboard/DashboardScreen';
+import { TerminalScreen } from './features/terminal/TerminalScreen';
 import { KanbanScreen } from './features/kanban/KanbanScreen';
 import { SandboxScreen } from './features/sandbox/SandboxScreen';
 import { WardenScreen } from './features/warden/WardenScreen';
@@ -16,6 +17,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={<DashboardScreen />} />
+      <Route path="/terminal" element={<TerminalScreen />} />
       <Route path="/kanban" element={<KanbanScreen />} />
       <Route path="/sandbox" element={<SandboxScreen />} />
       <Route path="/warden" element={<WardenScreen />} />

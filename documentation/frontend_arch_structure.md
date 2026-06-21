@@ -22,9 +22,11 @@ The frontend is built using **React** with **Vite** for fast bundling, utilizing
 
 ## [SPECIFICATION - PENDING IMPLEMENTATION]
 *The following features are designed but not yet implemented in the codebase:*
-- **Terminal Emulator:** `xterm.js` with WebGL renderer.
-- **Embedded Chat / Terminal:** The most critical future feature. Designed to run the full Hermes TUI inside the browser via a PTY WebSocket (`/api/pty`).
 - **Theme & Plugin Systems:** 
+
+## Implemented Features
+- **Terminal Emulator & Embedded Chat:** A native `TerminalScreen.tsx` using `@xterm/xterm` with the WebGL renderer. It connects to the `/api/pty` WebSocket to run the full Hermes TUI inside the browser.
+- **Dynamic Routing:** API and WebSocket endpoints dynamically resolve using `window.location.origin` and `window.location.host`, ensuring flawless compatibility with Cloudflare Tunnels under the single-port architecture.
   - **Themes**: Hot-swappable color palettes managed via `~/.hermes/dashboard-themes/`.
   - **Plugins**: A Plugin SDK exposed on `window.__HERMES_PLUGIN_SDK__`, allowing custom UI extensions without rebuilding React.
 

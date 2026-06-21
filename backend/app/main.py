@@ -2,6 +2,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.db.database import init_db
@@ -18,6 +19,7 @@ from app.api.v1.warden import router as warden_router
 from app.api.v1.control import router as control_router
 from app.api.v1.sandbox import router as sandbox_router
 from app.api.v1.tunnels import router as tunnels_router
+from app.api.v1.pty import router as pty_router
 from jose import jwt, JWTError
 from app.services.warden.scheduler import start_scheduler, stop_scheduler
 from app.api.deps import get_current_user
@@ -58,6 +60,7 @@ app.include_router(warden_router, prefix="/api/v1/warden", tags=["warden"], depe
 app.include_router(control_router, prefix="/api/v1/control", tags=["control"], dependencies=auth_deps)
 app.include_router(sandbox_router, prefix="/api/v1/sandbox", tags=["sandbox"], dependencies=auth_deps)
 app.include_router(tunnels_router, prefix="/api/v1/tunnels", tags=["tunnels"], dependencies=auth_deps)
+app.include_router(pty_router, prefix="/api/pty", tags=["pty"])
 
 # WebSocket Endpoint
 @app.websocket("/ws/telemetry")
@@ -78,3 +81,9 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+import os
+# Mount React static files
+frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend", "dist")
+if os.path.exists(frontend_dist):
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")

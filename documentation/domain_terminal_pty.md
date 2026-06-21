@@ -1,11 +1,11 @@
 # Domain: Embedded Chat & PTY Terminal
 
-> [!WARNING]
-> **[SPECIFICATION - PENDING IMPLEMENTATION]**
-> *This document is a technical specification for a feature that is NOT yet implemented in the codebase. It describes the target architecture.*
+> [!NOTE]
+> **[IMPLEMENTED]**
+> *This feature has been successfully implemented in Phase 1 of the deployment strategy.*
 
 ## The Concept
-The target Hermes agent dashboard runs the full Hermes Terminal User Interface (TUI) inside the browser via a PTY (pseudo-terminal) WebSocket connection. This is the **biggest gap** that is currently missing from the implementation.
+The Hermes agent dashboard runs the full Hermes Terminal User Interface (TUI) inside the browser via a PTY (pseudo-terminal) WebSocket connection. This successfully bridges the native TUI to the web browser.
 
 ## How It Works
 
