@@ -34,4 +34,9 @@ The backend acts as the Mission Control Gateway for the Hermes Agent. Built with
 ## Real Agent Integration
 - **Direct Sub-Agent Invocation**: The backend interacts with Hermes components directly or via standard task delegation (`delegate_task` and kanban queues), rather than a fictional `company_loop.sh`.
 - **System Metrics**: Read directly using system libraries (`psutil`, `/proc`) to monitor host limits (e.g., Oracle Free Tier CPU/RAM limits) without needing simulated proxies.
-- **Token Tracking**: Token usage and costs are pulled directly from `hermes_state.db` rather than using an external LiteLLM proxy.
+- **Token Tracking**: Token usage and costs are pulled directly from the `model_usage` table in `hermes_state.db` rather than using an external LiteLLM proxy.
+
+## Docker Compatibility & Execution Safety
+- **Gateway Restarting:** Securely reboots listeners within a containerized Docker architecture by executing `pkill -f hermes-gateway` instead of relying on `systemctl` (which is unavailable in standard Docker containers).
+- **YAML Null-Safety:** The backend `ruamel.yaml` Vault config parser implements aggressive `.setdefault()` checks, ensuring no `KeyError` crashes occur when adding the very first provider or API key dynamically.
+- **Dynamic Path Expansion:** Native file operations (`config.yaml`, `skills/`, `.env`) properly expand `~` using `os.path.expanduser()` to prevent `FileNotFoundError` across both Docker volumes and native Linux/Windows filesystems.

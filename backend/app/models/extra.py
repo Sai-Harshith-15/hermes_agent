@@ -81,3 +81,12 @@ class AgentMessage(SQLModel, table=True):
     task_id: Optional[int] = None
     content: str
     ts: datetime = Field(default_factory=utcnow)
+
+class PairingRequest(SQLModel, table=True):
+    __tablename__ = "pairing_requests"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: str = Field(unique=True)
+    platform: str
+    username: str
+    status: str = Field(default="pending")
+    requested_at: datetime = Field(default_factory=utcnow)

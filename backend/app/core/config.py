@@ -19,7 +19,10 @@ class Settings(BaseSettings):
 
     @property
     def DATABASE_URL(self) -> str:
-        return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        # Resolve to standard hermes_state.db path with async driver
+        hermes_dir = os.environ.get("HERMES_DIR", "~/.hermes")
+        db_path = os.path.expanduser(f"{hermes_dir}/hermes_state.db")
+        return f"sqlite+aiosqlite:///{db_path}"
 
     class Config:
         env_file = ".env"

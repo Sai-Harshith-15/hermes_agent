@@ -1,6 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Dict, Any
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
+from app.db.database import get_db
+from app.models.extra import PairingRequest
 import os
 import json
 import secrets
@@ -28,26 +32,33 @@ def setup_messaging(req: MessagingSetupRequest):
     env_var_name = f"{req.platform.upper()}_BOT_TOKEN"
     set_key(str(env_path), env_var_name, req.bot_token)
     
-    # Try to restart gateway (this might fail if not running as root or no systemd)
+    # Try to restart gateway safely in docker
     try:
-        subprocess.Popen(['systemctl', 'restart', 'hermes-gateway'])
+        subprocess.Popen(['pkill', '-f', 'hermes-gateway'])
     except Exception:
         pass # Ignore restart errors in dev environment
         
     return {"status": "success", "message": f"{req.platform} configured successfully"}
 
 @router.get("/pairing")
-def get_pairing_requests():
-    # In a real app we'd query the DB: SELECT * FROM pairing_requests WHERE status='pending'
-    # Mock for UI demonstration
-    return [
-        {"user_id": "tg_12345", "platform": "Telegram", "code": "651923", "status": "pending"},
-        {"user_id": "dc_98765", "platform": "Discord", "code": "812044", "status": "pending"}
-    ]
+async def get_pairing_requests(session: AsyncSession = Depends(get_db)):
+    stmt = select(PairingRequest).where(PairingRequest.status == "pending")
+    result = await session.execute(stmt)
+    requests = result.scalars().all()
+    return [{"user_id": req.user_id, "platform": req.platform, "username": req.username, "status": req.status} for req in requests]
 
 @router.post("/pairing/{user_id}/approve")
-def approve_pairing(user_id: str):
-    # In a real app we'd update the DB: UPDATE pairing_requests SET status='approved' WHERE user_id=?
+async def approve_pairing(user_id: str, session: AsyncSession = Depends(get_db)):
+    stmt = select(PairingRequest).where(PairingRequest.user_id == user_id)
+    result = await session.execute(stmt)
+    req = result.scalars().first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Pairing request not found")
+    
+    req.status = "approved"
+    session.add(req)
+    await session.commit()
+    
     return {"status": "success", "message": f"User {user_id} approved"}
 
 @router.get("/themes")

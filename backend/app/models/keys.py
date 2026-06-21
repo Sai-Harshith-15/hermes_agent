@@ -24,10 +24,10 @@ class ApiKeyPool(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    usages: List["ApiKeyUsages"] = Relationship(back_populates="key")
+    usages: List["ModelUsage"] = Relationship(back_populates="key")
 
-class ApiKeyUsages(SQLModel, table=True):
-    __tablename__ = "api_key_usages"
+class ModelUsage(SQLModel, table=True):
+    __tablename__ = "model_usage"
     
     id: Optional[int] = Field(default=None, primary_key=True)
     key_id: int = Field(foreign_key="api_key_pool.id")

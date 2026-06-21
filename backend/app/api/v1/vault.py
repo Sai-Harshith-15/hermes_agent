@@ -65,20 +65,17 @@ def add_vault_key(req: VaultAddRequest):
         
     try:
         data = ryaml.load(raw_config)
-        if "llm" not in data or data["llm"] is None:
-            data["llm"] = {}
-        if "api_keys" not in data["llm"] or data["llm"]["api_keys"] is None:
-            data["llm"]["api_keys"] = []
-            
+        providers = data.setdefault('llm', {}).setdefault('providers', {})
+        provider_config = providers.setdefault(req.provider, {})
+        api_keys = provider_config.setdefault('api_keys', [])
+        
         # Determine the next index
-        idx = len(data["llm"]["api_keys"]) + 1
+        idx = len(api_keys) + 1
         env_var_name = f"{req.provider.upper()}_KEY_{idx}"
         
         # Add to YAML rotation
-        data["llm"]["api_keys"].append({
-            "provider": req.provider,
-            "key_id": env_var_name
-        })
+        if f"${env_var_name}" not in api_keys:
+            api_keys.append(f"${env_var_name}")
         
         # Save YAML
         import io

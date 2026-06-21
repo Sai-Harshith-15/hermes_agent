@@ -33,15 +33,17 @@ To show *everything* the agent is doing, FastAPI needs specialized Python Adapte
 - Returns active sub-agents, their assigned tasks, and real-time execution status (todo, in-progress, blocked, done).
 
 ### C. The Configuration & MCP Manager (`ruamel.yaml` & `.env`)
-- **Safe Editing:** Uses the `ruamel.yaml` library (instead of standard PyYAML) to read/write `~/.hermes/config.yaml`. This is critical because it preserves your `# comments` and formatting when adding MCP servers.
+- **Safe Editing:** Uses the `ruamel.yaml` library with defensive `.setdefault()` null-safety mapping to read/write `~/.hermes/config.yaml`. This is critical because it preserves your `# comments` and formatting when adding MCP servers.
 - **Environment:** Uses `python-dotenv` to safely manage API keys and Messaging Channel tokens (Telegram, Discord) in the `.env` file.
 
 ### D. Profiles & Skills Hub Manager (Filesystem)
 - **Profiles:** Python's `pathlib` scans `~/.hermes/profiles/` to catalog distinct agent identities, reading their specific `config.yaml` and `memories/` directories.
 - **Skills:** Scans `~/.hermes/skills/` to catalog installed python/JS extensions and reads their `manifest.json`.
 
-### E. The Shell Executor (System Ops)
+### E. The Shell Executor & Container Resilience
 - Secure endpoints using Python's `subprocess.Popen` to safely execute core Hermes commands (`hermes doctor`, `hermes backup`, skill installations). Output is piped back to the frontend via WebSockets (`/ws/ops`).
+- **Docker-Safe Restarts:** Uses `pkill -f hermes-gateway` to signal graceful restarts to the Docker supervisor, completely avoiding `systemctl` failures.
+- **Universal Paths:** `os.path.expanduser()` strictly applied across all Python adapters to guarantee `~/.hermes` resolves correctly in both Oracle Linux and Docker container mounts.
 
 ---
 

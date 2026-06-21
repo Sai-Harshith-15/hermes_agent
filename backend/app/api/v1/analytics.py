@@ -5,7 +5,7 @@ from sqlalchemy import func
 from sqlmodel import select
 
 from app.db.database import get_db
-from app.models.keys import ApiKeyPool, ApiKeyUsages
+from app.models.keys import ApiKeyPool, ModelUsage
 
 router = APIRouter()
 
@@ -15,15 +15,15 @@ async def get_daily_analytics(session: AsyncSession = Depends(get_db)):
     
     stmt = (
         select(
-            func.date(ApiKeyUsages.timestamp).label("day"),
+            func.date(ModelUsage.timestamp).label("day"),
             ApiKeyPool.model_name.label("model_id"),
-            func.sum(ApiKeyUsages.prompt_tokens).label("input"),
-            func.sum(ApiKeyUsages.completion_tokens).label("output"),
-            func.sum(ApiKeyUsages.cost_usd).label("total_cost")
+            func.sum(ModelUsage.prompt_tokens).label("input"),
+            func.sum(ModelUsage.completion_tokens).label("output"),
+            func.sum(ModelUsage.cost_usd).label("total_cost")
         )
-        .join(ApiKeyPool, ApiKeyUsages.key_id == ApiKeyPool.id)
-        .where(ApiKeyUsages.timestamp >= thirty_days_ago)
-        .group_by(func.date(ApiKeyUsages.timestamp), ApiKeyPool.model_name)
+        .join(ApiKeyPool, ModelUsage.key_id == ApiKeyPool.id)
+        .where(ModelUsage.timestamp >= thirty_days_ago)
+        .group_by(func.date(ModelUsage.timestamp), ApiKeyPool.model_name)
     )
     
     result = await session.execute(stmt)

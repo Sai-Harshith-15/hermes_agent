@@ -15,6 +15,7 @@ WORKDIR /app
 # Install dependencies for python and general tools
 RUN apt-get update && apt-get install -y \
     gcc \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy python requirements and install
