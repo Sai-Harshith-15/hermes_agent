@@ -1,27 +1,39 @@
 version: '3.8'
 
 services:
-  # 1. The Hermes Mission Control Dashboard (Backend + Frontend)
-  hermes-mission-control:
-    build: .
+  # 1. FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
     pid: "host"
-    container_name: hermes_mission_control
+    container_name: hermes_backend
     restart: unless-stopped
-    ports:
-      - "8000:8000"
     volumes:
-      # CRITICAL: Maps the host's actual Hermes data into the dashboard
+      # CRITICAL: Maps the host's actual Hermes data into the backend
       - ~/.hermes:/root/.hermes
     environment:
       - HOST=0.0.0.0
       - PORT=8000
 
-  # 2. Automated Cloudflare Tunnel
+  # 2. NGINX + React Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    container_name: hermes_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  # 3. Automated Cloudflare Tunnel
   cloudflare-tunnel:
     image: cloudflare/cloudflared:latest
     container_name: hermes_tunnel
     restart: unless-stopped
-    # Automatically routes public traffic to the Mission Control container
-    command: tunnel --url http://hermes-mission-control:8000
+    # Automatically routes public traffic to the NGINX frontend container
+    command: tunnel --url http://frontend:80
     depends_on:
-      - hermes-mission-control
+      - frontend

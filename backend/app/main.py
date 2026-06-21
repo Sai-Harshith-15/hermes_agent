@@ -122,7 +122,3 @@ os.makedirs(rollback_dir, exist_ok=True)
 # NOW it is safe to mount and scan
 app.mount("/api/plugins-static", StaticFiles(directory=plugin_dir), name="plugins")
 
-# Mount React static files
-frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend", "dist")
-if os.path.exists(frontend_dist):
-    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")
