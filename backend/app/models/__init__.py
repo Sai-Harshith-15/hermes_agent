@@ -1,5 +1,5 @@
 from .host import HostMetrics
-from .keys import ApiKeyPool, ApiKeyUsages
+from .keys import ApiKeyPool, ModelUsage
 from .tasks import Tasks
 from .agents import AgentRuns
 from .logs import AgentLogs
@@ -13,7 +13,7 @@ from .extra import (
 __all__ = [
     "HostMetrics",
     "ApiKeyPool",
-    "ApiKeyUsages",
+    "ModelUsage",
     "AgentRuns",
     "Tasks",
     "AgentLogs",

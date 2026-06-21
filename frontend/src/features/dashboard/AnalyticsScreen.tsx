@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { Activity, Database, DollarSign } from 'lucide-react';
 
-const API_BASE = 'http://localhost:8000/api/v1'; // Assuming default fastapi port for standalone requests, or we use our api client
+const API_BASE = '/api/v1'; // Assuming default fastapi port for standalone requests, or we use our api client
 
 export function AnalyticsScreen() {
   const [data, setData] = useState<any[]>([]);

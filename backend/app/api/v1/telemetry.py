@@ -6,7 +6,7 @@ from sqlmodel import select
 from app.db.database import get_db
 from app.websocket_manager import manager
 from app.models import (
-    HostMetrics, ApiKeyPool, ApiKeyUsages, AgentRuns, Tasks, AgentLogs
+    HostMetrics, ApiKeyPool, ModelUsage, AgentRuns, Tasks, AgentLogs
 )
 
 router = APIRouter()
@@ -63,8 +63,8 @@ async def create_or_update_key(key: ApiKeyPool, session: AsyncSession = Depends(
     return key
 
 # 4. API Key usages POST
-@router.post("/key-usage", response_model=ApiKeyUsages)
-async def create_key_usage(usage: ApiKeyUsages, session: AsyncSession = Depends(get_db)):
+@router.post("/key-usage", response_model=ModelUsage)
+async def create_key_usage(usage: ModelUsage, session: AsyncSession = Depends(get_db)):
     session.add(usage)
     await session.commit()
     await session.refresh(usage)

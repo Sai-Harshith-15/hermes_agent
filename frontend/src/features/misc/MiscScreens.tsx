@@ -21,7 +21,7 @@ export function VaultScreen() {
   const fetchVault = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8000/api/v1/vault', {
+      const res = await fetch('/api/v1/vault', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setVaultKeys(await res.json());
@@ -38,7 +38,7 @@ export function VaultScreen() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:8000/api/v1/vault/add', {
+      await fetch('/api/v1/vault/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ provider: newKeyForm.provider, key: newKeyForm.api_key_masked })
@@ -726,7 +726,7 @@ export function ChannelsScreen() {
   const fetchPairing = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8000/api/v1/messaging/pairing', {
+      const res = await fetch('/api/v1/messaging/pairing', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setPairingRequests(await res.json());
@@ -743,7 +743,7 @@ export function ChannelsScreen() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8000/api/v1/messaging/setup', {
+      const res = await fetch('/api/v1/messaging/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ platform, bot_token: botToken })
@@ -759,7 +759,7 @@ export function ChannelsScreen() {
   const handleApprove = async (userId: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:8000/api/v1/messaging/pairing/${userId}/approve`, {
+      await fetch(`/api/v1/messaging/pairing/${userId}/approve`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -831,7 +831,7 @@ export function WebhooksScreen() {
   const fetchWebhooks = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8000/api/v1/messaging/webhooks', {
+      const res = await fetch('/api/v1/messaging/webhooks', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setWebhooks(await res.json());
@@ -848,7 +848,7 @@ export function WebhooksScreen() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8000/api/v1/messaging/webhooks', {
+      const res = await fetch('/api/v1/messaging/webhooks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(newHook)
@@ -925,7 +925,7 @@ export function MCPScreen() {
   const fetchMcps = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8000/api/v1/mcp', {
+      const res = await fetch('/api/v1/mcp', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setMcps(await res.json());
@@ -942,7 +942,7 @@ export function MCPScreen() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:8000/api/v1/mcp', {
+      await fetch('/api/v1/mcp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(newMcp)
@@ -958,7 +958,7 @@ export function MCPScreen() {
   const handlePing = async (mcp: any) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8000/api/v1/mcp/test', {
+      const res = await fetch('/api/v1/mcp/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ type: mcp.type, command_or_url: mcp.command_or_url })
@@ -973,7 +973,7 @@ export function MCPScreen() {
   const handleDelete = async (name: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:8000/api/v1/mcp/${name}`, {
+      await fetch(`/api/v1/mcp/${name}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -1062,7 +1062,7 @@ export function PluginsScreen() {
   const fetchSkills = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8000/api/v1/skills/local', {
+      const res = await fetch('/api/v1/skills/local', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setSkills(await res.json());
@@ -1089,7 +1089,7 @@ export function PluginsScreen() {
       xtermRef.current = term;
 
       const token = localStorage.getItem('token');
-      const ws = new WebSocket(`ws://localhost:8000/ws/telemetry?token=${token}`);
+      const ws = new WebSocket(`ws:///ws/telemetry?token=${token}`);
       
       ws.onmessage = (event) => {
         try {
@@ -1111,7 +1111,7 @@ export function PluginsScreen() {
   const handleToggle = async (id: string, enabled: boolean) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:8000/api/v1/skills/toggle', {
+      await fetch('/api/v1/skills/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ skill_id: id, enabled: !enabled })
@@ -1126,7 +1126,7 @@ export function PluginsScreen() {
     setInstallingSkill(id);
     try {
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:8000/api/v1/skills/install', {
+      await fetch('/api/v1/skills/install', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ skill_id: id })
@@ -1278,7 +1278,7 @@ export function ThemesScreen() {
   const fetchThemes = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8000/api/v1/messaging/themes', {
+      const res = await fetch('/api/v1/messaging/themes', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setThemes(await res.json());
