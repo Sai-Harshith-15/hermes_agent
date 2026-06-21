@@ -85,8 +85,6 @@ app.include_router(hooks_router, prefix="/api/v1/ops/hooks", tags=["hooks"], dep
 app.include_router(curator_router, prefix="/api/v1/skills/curator", tags=["curator"], dependencies=auth_deps)
 app.include_router(plugins_router, prefix="/api/v1/plugins", tags=["plugins"], dependencies=auth_deps)
 app.include_router(pty_router, prefix="/api/pty", tags=["pty"])
-app.include_router(proxy_router, prefix="/api/proxy/hermes-dashboard", tags=["proxy"])
-
 # WebSocket Endpoint
 @app.websocket("/ws/telemetry")
 async def websocket_endpoint(websocket: WebSocket, token: str):
@@ -126,3 +124,14 @@ app.mount("/api/plugins-static", StaticFiles(directory=plugin_dir), name="plugin
 frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
 if os.path.isdir(frontend_dist):
     app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
+
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.responses import FileResponse, JSONResponse
+
+@app.exception_handler(StarletteHTTPException)
+async def spa_exception_handler(request, exc):
+    if exc.status_code == 404 and not request.url.path.startswith("/api"):
+        index_path = os.path.join(frontend_dist, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})

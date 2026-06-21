@@ -1,10 +1,6 @@
 import { API_BASE_URL as BASE_URL } from './client';
 
 export const hermesApi = {
-  getAgents: async () => {
-    const res = await fetch(`${BASE_URL}/agents/`);
-    return res.json();
-  },
   getSessions: async (limit = 50) => {
     const res = await fetch(`${BASE_URL}/sessions/?limit=${limit}`);
     return res.json();
@@ -27,10 +23,6 @@ export const hermesApi = {
   },
   getProfiles: async () => {
     const res = await fetch(`${BASE_URL}/profiles/`);
-    return res.json();
-  },
-  getConfig: async () => {
-    const res = await fetch(`${BASE_URL}/profiles/config`);
     return res.json();
   },
   updateSoul: async (agentName: string, content: string) => {

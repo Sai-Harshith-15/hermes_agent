@@ -10,7 +10,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hermesApi } from '../../lib/api/hermes_api';
 import { controlApi } from '../../lib/api/control_api';
 import { fetchApi, getConfigYaml, updateConfigYaml, getEnv, updateEnv, runOp } from '../../lib/api/client';
-import Editor from '@monaco-editor/react';
+const Editor = React.lazy(() => import('@monaco-editor/react'));
 
 export function VaultScreen() {
   const [showAddKey, setShowAddKey] = useState(false);
@@ -37,10 +37,8 @@ export function VaultScreen() {
   const handleAddKey = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      await fetch('/api/v1/vault/add', {
+      await fetchApi('/vault/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ provider: newKeyForm.provider, key: newKeyForm.api_key_masked })
       });
       setNewKeyForm({ provider: '', model_name: '', api_key_masked: '', rpm_limit: 60 });
@@ -508,11 +506,33 @@ export function SessionsScreen() {
 }
 
 export function ChatScreen() {
-  const [messages, setMessages] = useState([
-    { role: 'system', content: 'You are securely connected to the Local SWE Supervisor.' },
-    { role: 'assistant', content: 'Good evening. Shall I trigger the deployment pipeline?' }
+  const [messages, setMessages] = useState<any[]>([
+    { role: 'system', content: 'You are securely connected to the Local SWE Supervisor.' }
   ]);
   const [input, setInput] = useState('');
+
+  useEffect(() => {
+    // Load chat history from the latest session
+    fetchApi('/sessions?limit=1')
+      .then(sessions => {
+        if (sessions && sessions.length > 0) {
+          const latestId = sessions[0].id || sessions[0].session_id;
+          return fetchApi(`/sessions/${latestId}/messages`);
+        }
+        return [];
+      })
+      .then(history => {
+        if (history && history.length > 0) {
+          setMessages(prev => [...prev, ...history.map((m: any) => ({
+            role: m.role || 'user',
+            content: m.content || m.message
+          }))]);
+        } else {
+          setMessages(prev => [...prev, { role: 'assistant', content: 'Good evening. Shall I trigger the deployment pipeline?' }]);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -543,7 +563,7 @@ export function ChatScreen() {
       <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-gray-950">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[70%] p-4 rounded-xl text-sm ${msg.role === 'user' ? 'bg-emerald-600 text-white rounded-br-none' : msg.role === 'system' ? 'bg-gray-800/50 text-gray-500 w-full text-center text-xs border border-gray-800 font-mono' : 'bg-gray-900 border border-gray-700 text-gray-200 rounded-bl-none'}`}>
+            <div className={`max-w-[70%] p-4 rounded-xl text-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-emerald-600 text-white rounded-br-none' : msg.role === 'system' ? 'bg-gray-800/50 text-gray-500 w-full text-center text-xs border border-gray-800 font-mono' : 'bg-gray-900 border border-gray-700 text-gray-200 rounded-bl-none'}`}>
               {msg.content}
             </div>
           </div>
@@ -567,10 +587,24 @@ export function ChatScreen() {
 }
 
 export function TunnelsScreen() {
-  const defaultTunnels = [
-    { id: 1, name: 'mayura_tunnel', url: 'https://saas-dashboard-xyz.trycloudflare.com', target: 'localhost:3000', status: 'Online' },
+  const [tunnels, setTunnels] = useState<any[]>([
     { id: 2, name: 'floci_api', url: 'http://localhost:4566', target: 'Local AWS Emulation', status: 'Online' }
-  ];
+  ]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchApi('/tunnels/url')
+      .then(res => {
+        if (res.url) {
+          setTunnels(prev => [
+            { id: 1, name: 'cloudflare_tunnel', url: res.url, target: 'frontend:80', status: 'Online' },
+            ...prev
+          ]);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -578,6 +612,7 @@ export function TunnelsScreen() {
         <h2 className="text-2xl font-bold text-white">Production Tunnels & Floci</h2>
       </div>
       <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-sm overflow-hidden">
+        {loading ? <div className="p-8 text-center text-gray-500">Scanning active tunnels...</div> : (
         <table className="w-full text-left text-sm text-gray-400">
           <thead className="bg-gray-800/30 text-xs uppercase text-gray-500 border-b border-gray-800">
             <tr>
@@ -588,16 +623,17 @@ export function TunnelsScreen() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800">
-            {defaultTunnels.map(tunnel => (
+            {tunnels.map(tunnel => (
               <tr key={tunnel.id} className="hover:bg-gray-800/30 transition-colors">
                 <td className="px-6 py-4 font-medium text-gray-200">{tunnel.name}</td>
-                <td className="px-6 py-4"><a href="#" className="text-blue-400 hover:underline flex items-center">{tunnel.url} <Globe size={12} className="ml-1"/></a></td>
+                <td className="px-6 py-4"><a href={tunnel.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline flex items-center">{tunnel.url} <Globe size={12} className="ml-1"/></a></td>
                 <td className="px-6 py-4 font-mono text-xs text-gray-500">{tunnel.target}</td>
                 <td className="px-6 py-4"><span className="flex items-center text-emerald-400 text-xs font-bold uppercase"><CheckCircle size={14} className="mr-1"/> {tunnel.status}</span></td>
               </tr>
             ))}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   );
@@ -661,24 +697,28 @@ export function SettingsScreen() {
 
       <div className="flex-1 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm relative">
         {activeTab === 'config' && (
-          <Editor
-            height="100%"
-            defaultLanguage="yaml"
-            theme="vs-dark"
-            value={configContent}
-            onChange={(val) => setConfigContent(val || '')}
-            options={{ minimap: { enabled: false }, fontSize: 14 }}
-          />
+          <React.Suspense fallback={<div className="p-8 text-center text-gray-500">Loading editor...</div>}>
+            <Editor
+              height="100%"
+              defaultLanguage="yaml"
+              theme="vs-dark"
+              value={configContent}
+              onChange={(val) => setConfigContent(val || '')}
+              options={{ minimap: { enabled: false }, fontSize: 14 }}
+            />
+          </React.Suspense>
         )}
         {activeTab === 'env' && (
-          <Editor
-            height="100%"
-            defaultLanguage="shell"
-            theme="vs-dark"
-            value={envContent}
-            onChange={(val) => setEnvContent(val || '')}
-            options={{ minimap: { enabled: false }, fontSize: 14 }}
-          />
+          <React.Suspense fallback={<div className="p-8 text-center text-gray-500">Loading editor...</div>}>
+            <Editor
+              height="100%"
+              defaultLanguage="shell"
+              theme="vs-dark"
+              value={envContent}
+              onChange={(val) => setEnvContent(val || '')}
+              options={{ minimap: { enabled: false }, fontSize: 14 }}
+            />
+          </React.Suspense>
         )}
         {activeTab === 'ops' && (
           <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 h-full content-start">
@@ -1239,32 +1279,43 @@ export function SkillsScreen() {
 }
 
 export function ModelsScreen() {
-  const models = [
-    { id: 1, name: 'gemma-4-12b', provider: 'Ollama (Local)', size: '8.2 GB GGUF', status: 'Loaded in RAM' },
-    { id: 2, name: 'opencode/big-pickle', provider: 'LiteLLM Proxy', size: 'API', status: 'Active Routing' },
-  ];
+  const [models, setModels] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchApi('/vault')
+      .then(res => setModels(res || []))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="max-w-5xl space-y-6">
       <div><h2 className="text-2xl font-bold text-white">Model Registry</h2></div>
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm">
+        {loading ? <div className="p-8 text-center text-gray-500">Scanning configured models...</div> : (
         <table className="w-full text-left text-sm text-gray-400">
           <thead className="bg-gray-800/30 text-xs uppercase text-gray-500 border-b border-gray-800">
             <tr>
-              <th className="px-6 py-4 font-medium">Model Designation</th>
-              <th className="px-6 py-4 font-medium">Provider Type</th>
+              <th className="px-6 py-4 font-medium">Provider / Model</th>
+              <th className="px-6 py-4 font-medium">Key ID</th>
               <th className="px-6 py-4 font-medium">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800">
-            {models.map(model => (
-              <tr key={model.id} className="hover:bg-gray-800/30 transition-colors">
-                <td className="px-6 py-4 font-bold text-gray-200">{model.name}</td>
-                <td className="px-6 py-4">{model.provider}</td>
-                <td className="px-6 py-4"><span className={`text-xs px-2 py-1 rounded border ${model.status.includes('RAM') || model.status.includes('Active') ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-gray-800 text-gray-400 border-gray-700'}`}>{model.status}</span></td>
+            {models.map((model, idx) => (
+              <tr key={idx} className="hover:bg-gray-800/30 transition-colors">
+                <td className="px-6 py-4 font-bold text-gray-200 capitalize">{model.provider}</td>
+                <td className="px-6 py-4 font-mono">{model.key_id}</td>
+                <td className="px-6 py-4"><span className={`text-xs px-2 py-1 rounded border ${model.key_id !== 'None' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-gray-800 text-gray-400 border-gray-700'}`}>{model.key_id !== 'None' ? 'Active' : 'Unconfigured'}</span></td>
               </tr>
             ))}
+            {models.length === 0 && (
+              <tr><td colSpan={3} className="px-6 py-8 text-center text-gray-500">No model providers configured in vault.</td></tr>
+            )}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   );

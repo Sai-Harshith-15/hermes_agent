@@ -54,8 +54,11 @@ export default function AgentCommandCenter() {
 
     init();
 
+    let isUnmounted = false;
     let ws: WebSocket;
+    
     const connectWS = () => {
+      if (isUnmounted) return;
       const token = localStorage.getItem('token');
       ws = new WebSocket(`${WS_BASE_URL}?token=${token}`);
 
@@ -94,7 +97,9 @@ export default function AgentCommandCenter() {
 
       ws.onclose = () => {
         setWsConnected(false);
-        setTimeout(connectWS, 5000);
+        if (!isUnmounted) {
+          setTimeout(connectWS, 5000);
+        }
       };
 
       ws.onerror = () => {
@@ -105,6 +110,7 @@ export default function AgentCommandCenter() {
     connectWS();
 
     return () => {
+      isUnmounted = true;
       if (ws) ws.close();
     };
   }, [isAuthenticated]);

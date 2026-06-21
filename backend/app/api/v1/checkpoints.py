@@ -10,7 +10,7 @@ class CheckpointItem(BaseModel):
     created_at: float
     size_bytes: int
 
-@router.get("/", response_model=list[CheckpointItem])
+@router.get("", response_model=list[CheckpointItem])
 async def list_checkpoints():
     """
     Scans the ~/.hermes/rollback/ directory and returns a list of checkpoints.

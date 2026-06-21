@@ -16,13 +16,5 @@ export const controlApi = {
       body: JSON.stringify({ agent_name, message })
     });
     return res.json();
-  },
-  pauseAgent: async (agent_name: string) => {
-    const res = await fetch(`${BASE_URL}/control/pause-agent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agent_name })
-    });
-    return res.json();
   }
 };

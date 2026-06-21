@@ -18,6 +18,12 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     headers,
   });
   
+  if (response.status === 401 && window.location.pathname !== '/') {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+    throw new Error('Session expired');
+  }
+
   if (!response.ok) {
     throw new Error(`API error: ${response.statusText}`);
   }
@@ -28,24 +34,10 @@ export async function fetchDashboardState() {
   return fetchApi('/dashboard/state');
 }
 
-export async function addApiKey(keyData: any) {
-  return fetchApi('/telemetry/key', {
-    method: 'POST',
-    body: JSON.stringify(keyData),
-  });
-}
-
 export async function sendAdminIntervention(command: string) {
   return fetchApi('/admin/intervene', {
     method: 'POST',
     body: JSON.stringify({ command }),
-  });
-}
-
-export async function injectTask(taskData: any) {
-  return fetchApi('/tasks', {
-    method: 'POST',
-    body: JSON.stringify(taskData),
   });
 }
 

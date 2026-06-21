@@ -4,7 +4,7 @@ from app.services.hermes.sandbox_service import HermesSandboxService
 from typing import List, Dict, Any
 from app.core.rbac import RequireRole
 
-router = APIRouter(dependencies=[Depends(RequireRole(["owner", "operator"]))])
+router = APIRouter()
 sandbox_service = HermesSandboxService()
 
 class FileUpdateRequest(BaseModel):

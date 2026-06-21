@@ -20,7 +20,7 @@ def get_hooks_file_path() -> str:
             json.dump([], f)
     return path
 
-@router.get("/", response_model=List[ShellHook])
+@router.get("", response_model=List[ShellHook])
 async def get_hooks():
     path = get_hooks_file_path()
     try:

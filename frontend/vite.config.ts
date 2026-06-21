@@ -17,6 +17,19 @@ export default defineConfig({
       }
     }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) return 'vendor';
+            if (id.includes('lucide-react') || id.includes('recharts') || id.includes('@monaco-editor') || id.includes('@hello-pangea')) return 'ui';
+            if (id.includes('react-router-dom') || id.includes('@tanstack/react-query')) return 'routing';
+          }
+        }
+      }
+    }
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
