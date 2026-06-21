@@ -1,28 +1,31 @@
 # Backend Architecture Structure
 
 ## Overview
-The backend acts as the "Master Control" and Telemetry Broker. Built with **FastAPI** and **Python**, it receives status updates from the Hermes sub-agents and broadcasts them to the React frontend in real-time. It handles data persistence using **SQLModel** with support for SQLite (local agents) and PostgreSQL (dashboard aggregation).
+The backend acts as the Mission Control Gateway for the Hermes Agent. Built with **FastAPI** and **Python**, it reads actual configuration and state from the local disk (`~/.hermes/`), and bridges the React frontend to the underlying agent systems in real-time. It handles data persistence exclusively using **SQLite** (`hermes_state.db`, `kanban.db`), matching the core agent's actual data model.
 
 ## Tech Stack
 - **Framework:** FastAPI
 - **Language:** Python 3.11+
-- **ORM:** SQLModel (Pydantic + SQLAlchemy)
-- **Database:** PostgreSQL (Cloud/Dashboard), SQLite (Local Hermes instances)
+- **Database:** SQLite (Local Hermes instances)
 - **Server:** Uvicorn
-- **Integration:** LiteLLM proxy logging
 
 ## Core Components
-1. **Telemetry Router (`api/telemetry_router.py`)**
-   - **WebSocket Endpoint:** `/ws` for frontend clients to connect and receive live broadcasts.
-   - **Ingestion Endpoint:** POST `/` for agents/simulators to push metrics.
-2. **WebSocket Manager (`api/websocket_manager.py`)**
-   - Manages active client connections.
-   - Handles broadcasting JSON-serialized data efficiently.
-3. **Database Models (`models.py`)**
-   - Defines `AgentRun`, `AgentLog`, `SystemMetrics`, and `ModelUsage` using SQLModel.
-4. **Simulator (`simulate_telemetry.py`)**
-   - A background script used for testing to pump fake CPU, RAM, and log data to the FastAPI endpoints.
+1. **Telemetry & API Router**
+   - **WebSocket Endpoints:** 
+     - `/ws/telemetry` for frontend clients to receive live telemetry updates.
+   - **API Routes:** `/api/v1/sandbox`, `/api/v1/warden`, etc., exposing internal Hermes adapters to the frontend.
 
-## Agent Integration
-- **Company Loop (`company_loop.sh`)**: The bash script that manages the agent lifecycle.
-- **LiteLLM**: Intercepts and logs API requests to compute cost savings and track LLM usage.
+## [SPECIFICATION - PENDING IMPLEMENTATION]
+*The following features are designed but not yet implemented in the codebase:*
+- **Embedded PTY Terminal:** A WebSocket endpoint (`/api/pty`) designed to spawn `hermes --tui` behind a POSIX pseudo-terminal for `xterm.js` integration in the frontend.
+2. **Adapters (`backend/app/services/hermes/`)**
+   - `HermesStateAdapter`: Reads the `hermes_state.db` SQLite file for token counts, session history, and cost metrics.
+   - `HermesConfigAdapter`: Reads/writes `~/.hermes/config.yaml` and `~/.hermes/.env` using the real Hermes file format.
+   - `HermesSkillsAdapter`: Reads/manages installed skills in `~/.hermes/skills/`.
+3. **Database Access**
+   - Direct access to local SQLite databases rather than relying on a centralized PostgreSQL server, adhering to the single-host simplicity.
+
+## Real Agent Integration
+- **Direct Sub-Agent Invocation**: The backend interacts with Hermes components directly or via standard task delegation (`delegate_task` and kanban queues), rather than a fictional `company_loop.sh`.
+- **System Metrics**: Read directly using system libraries (`psutil`, `/proc`) to monitor host limits (e.g., Oracle Free Tier CPU/RAM limits) without needing simulated proxies.
+- **Token Tracking**: Token usage and costs are pulled directly from `hermes_state.db` rather than using an external LiteLLM proxy.

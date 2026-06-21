@@ -1,7 +1,7 @@
 # Frontend Architecture Structure
 
 ## Overview
-The frontend is built using **React** with **Vite** for fast bundling, utilizing **TypeScript** for type safety. Styling is handled via **Tailwind CSS v4** (`@tailwindcss/postcss`). The core purpose is to serve as a live telemetry dashboard to monitor the Hermes agents, simulating "security cameras" for the "Free Office".
+The frontend is built using **React** with **Vite** for fast bundling, utilizing **TypeScript** for type safety. Styling is handled via **Tailwind CSS v4** (`@tailwindcss/postcss`). Its primary purpose is to serve as the main dashboard (Mission Control) to manage, monitor, and directly interact with Hermes agents.
 
 ## Tech Stack
 - **Framework:** React 18
@@ -9,21 +9,27 @@ The frontend is built using **React** with **Vite** for fast bundling, utilizing
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS v4, Lucide React (Icons)
 - **Data Visualization:** Recharts
-- **Communication:** WebSockets (Live telemetry), Axios (HTTP API calls)
+- **Communication:** WebSockets (Live telemetry via `/ws/telemetry`), Custom fetch wrappers.
 
 ## Core Components
-1. **Telemetry Dashboard (`App.tsx`)**
-   - Establishes a WebSocket connection to the backend (`ws://localhost:8000/api/telemetry/ws`).
-   - Listens for real-time telemetry events.
+1. **Telemetry & Dashboard (`App.tsx` & `DashboardScreen.tsx`)**
+   - Establishes a WebSocket connection (`ws://localhost:8000/ws/telemetry`) for read-only events.
    - Categorizes events into active models, server metrics (CPU/RAM), recent logs, and active agents.
-2. **Widgets/Panels**
-   - **System Resources:** Displays live CPU and RAM usage mimicking Oracle Free Tier constraints.
-   - **Active Agents:** Shows statuses of the "Freelance Workers" (Coders, Video Editors).
-   - **Cost Savings Tracker:** Monitors theoretical savings from using local Ollama models vs. paid APIs.
-   - **Live Feed:** A scrolling terminal-like log view.
+2. **Session Details & History (`MiscScreens.tsx`)**
+   - Displays live session tracking and basic memory retrieval via `ObsidianScreen` using search APIs.
+3. **Management UIs (`MiscScreens.tsx`)**
+   - Includes static placeholder UI for MCP Servers, Tunnels, Output Channels, and Credential Vaults. Currently powered by basic REST endpoints (`hermesApi`, `controlApi`).
+
+## [SPECIFICATION - PENDING IMPLEMENTATION]
+*The following features are designed but not yet implemented in the codebase:*
+- **Terminal Emulator:** `xterm.js` with WebGL renderer.
+- **Embedded Chat / Terminal:** The most critical future feature. Designed to run the full Hermes TUI inside the browser via a PTY WebSocket (`/api/pty`).
+- **Theme & Plugin Systems:** 
+  - **Themes**: Hot-swappable color palettes managed via `~/.hermes/dashboard-themes/`.
+  - **Plugins**: A Plugin SDK exposed on `window.__HERMES_PLUGIN_SDK__`, allowing custom UI extensions without rebuilding React.
 
 ## State Management
-State is managed locally within React components using `useState` and `useEffect` for real-time updates from WebSocket feeds.
+State is managed locally within React components using standard hooks (`useState`, `useEffect`) combined with custom stores to handle WebSocket data streams and terminal instances.
 
 ## Routing
-Currently a single-page application (SPA). Future expansion can use `react-router-dom` to separate configuration and analytics views.
+While currently heavily centralized, the app uses React to segment views into specific panels for Configuration, Telemetry Analytics, and the Terminal interface.
