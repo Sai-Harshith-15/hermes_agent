@@ -122,3 +122,7 @@ os.makedirs(rollback_dir, exist_ok=True)
 # NOW it is safe to mount and scan
 app.mount("/api/plugins-static", StaticFiles(directory=plugin_dir), name="plugins")
 
+# Frontend static mount fallback (for local development without Docker/NGINX)
+frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
+if os.path.isdir(frontend_dist):
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")

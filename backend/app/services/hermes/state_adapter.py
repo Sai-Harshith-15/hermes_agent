@@ -25,6 +25,13 @@ class HermesStateAdapter:
         except Exception:
             return []
 
+    async def get_recent_tasks(self, limit: int = 50) -> List[Dict[str, Any]]:
+        query = "SELECT * FROM tasks ORDER BY updated_at DESC LIMIT ?"
+        try:
+            return await self._execute_query(query, (limit,))
+        except Exception:
+            return []
+
     async def get_messages(self, session_id: str, limit: int = 100) -> List[Dict[str, Any]]:
         query = "SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC LIMIT ?"
         try:
