@@ -1,140 +1,105 @@
-# 🚀 Hermes Mission Control (HMC) - Master Implementation Plan
+# 🚀 Hermes Mission Control - Phase 2 & 3 Deep Logic Blueprint
 
-## 1. Executive Summary & Architecture Pivot
-This document outlines the robust implementation plan for the Hermes Mission Control Dashboard. We are officially pivoting away from fictional configurations to strictly interface with the **actual Hermes Agent architecture**:
+## 1. Executive Summary & Current State
+**Phase 1 is Complete.** The dashboard securely connects to the real `hermes_state.db`, provides a real-time native `@xterm/xterm` PTY terminal, proxies the native dashboard via `httpx`, and safely edits `config.yaml` using Monaco and `ruamel.yaml`. Fictional concepts have been eradicated.
 
-- **Storage Pivot:** Dropped PostgreSQL entirely. HMC will exclusively use the native **SQLite** databases (`hermes_state.db`, `kanban.db`).
-- **Logic Pivot:** Dropped fictional scripts (`company_loop.sh`, `litellm_hook.py`). Telemetry and metrics will be pulled directly from the host OS (`psutil`/`/proc`) and `state.db`.
-- **The Core Missing Link:** The dashboard will feature a real-time Embedded PTY Terminal (`xterm.js` + WebSockets) to provide native interaction with the Hermes TUI directly from the browser.
-- **Universal Deployment:** Fully Dockerized to ensure it runs identically on an Oracle Ubuntu Server or a Windows laptop, with an automated Cloudflare Tunnel sidecar for secure, instant public access.
+**The Goal:** Transform the remaining Phase 2 and Phase 3 visual placeholders (MCP Snitch, Plugins Grid, Vault, Analytics, Pairing) into fully functional systems by writing the deep Python logic that directly manipulates the Hermes Agent's local directories, `.env` files, and SQLite databases.
 
 ---
 
-## 2. Universal Deployment & Tunnel Strategy (Run Anywhere)
+## 2. Deep Logic Implementation: Domain by Domain
 
-To fulfill the requirement of running on **any OS** and providing an instant **Tunnel URL** out of the box, we will deploy HMC using a unified Docker Compose architecture. 
+### 🔌 Domain 1: MCP Server Manager (Bridging Gap #4)
+**Goal:** Convert the static `MCPScreen` into a live CRUD interface that directly modifies the `mcp_servers` block in `~/.hermes/config.yaml` and verifies connections.
 
-### 2.1 The "Single-Port" Serving Strategy
-To fix the **Tunnel Mapping Issue** (where the frontend breaks over a tunnel because it tries to call `localhost`), **FastAPI will serve the built React frontend as static files**.
-1. React (Vite) is built into static files (`/dist`).
-2. FastAPI serves these files on `/` and handles APIs on `/api` and `/ws`.
-3. The frontend dynamically resolves the tunnel URL using `window.location.host` instead of hardcoded local addresses.
+*   **Backend (`backend/app/api/v1/mcp.py`)**
+    *   `GET /api/v1/mcp`: Uses `HermesConfigAdapter` to read the `mcp_servers` dict from `config.yaml` and returns it as a JSON list.
+    *   `POST /api/v1/mcp`: Accepts a JSON payload (name, type [stdio/sse], command/url). Uses `ruamel.yaml` to safely append this to the `mcp_servers` block **without destroying user comments**.
+    *   `DELETE /api/v1/mcp/{server_name}`: Pops the server from the YAML dictionary and saves.
+    *   `POST /api/v1/mcp/test`: 
+        *   *If SSE:* Executes an async `httpx.get()` to the SSE endpoint to verify a 200 OK status.
+        *   *If stdio:* Spawns a temporary `subprocess.Popen` running the defined command to verify the executable exists and doesn't instantly crash, returning the exit code.
+*   **Frontend (`MCPScreen.tsx`)**
+    *   Bind the "Add Server" modal to `POST /api/v1/mcp`.
+    *   Add dynamic "Ping" buttons next to each row that call the `/test` endpoint and render a live Green/Red connection badge.
 
-### 2.2 Automated Setup (`docker-compose.yml`)
-This setup mounts your real Hermes brain into the dashboard container and automatically spins up a Cloudflare Quick Tunnel. You can run this alongside your existing Hermes container.
+### 🛠️ Domain 2: Skills Hub Engine (Bridging Gap #7)
+**Goal:** Replace the static `PluginsScreen` with a dynamic file scanner that manages actual tools in `~/.hermes/skills/` and streams installation logs.
 
-```yaml
-version: '3.8'
+*   **Backend (`backend/app/api/v1/skills.py`)**
+    *   `GET /api/v1/skills/local`: Uses Python `pathlib` to iterate through `~/.hermes/skills/`. For each subdirectory, it parses `manifest.json` (extracting name, version, description, and status).
+    *   `POST /api/v1/skills/toggle`: Modifies the `enabled: true/false` flag in a specific skill's manifest.
+    *   `POST /api/v1/skills/install`: Triggers a `subprocess.Popen(['hermes', 'skill', 'install', '<skill_id>'])`. 
+    *   *WebSocket Binding:* Popen's `stdout` is piped directly to your existing `/ws/ops` endpoint so the user sees real-time NPM/PIP installation logs inside the browser.
+*   **Frontend (`MarketplaceScreen.tsx`)**
+    *   Map the UI cards to the `GET /local` response.
+    *   On clicking "Install", open a Modal containing an `xterm.js` window that subscribes to `/ws/ops` to show the live installation progress.
 
-services:
-  # 1. The Hermes Mission Control Dashboard (Backend + Frontend)
-  hermes-mission-control:
-    build: .
-    container_name: hermes_mission_control
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
-    volumes:
-      # CRITICAL: Maps the host's actual Hermes data into the dashboard
-      - ~/.hermes:/root/.hermes 
-    environment:
-      - HOST=0.0.0.0
-      - PORT=8000
+### 🔐 Domain 3: Credential Vault & Rotation (Bridging Gap #9)
+**Goal:** Upgrade the `VaultScreen` from a simple static UI into a rotating credential manager across multiple LLM providers.
 
-  # 2. Automated Cloudflare Tunnel
-  cloudflare-tunnel:
-    image: cloudflare/cloudflared:latest
-    container_name: hermes_tunnel
-    restart: unless-stopped
-    # Automatically routes public traffic to the Mission Control container
-    command: tunnel --url http://hermes-mission-control:8000
-    depends_on:
-      - hermes-mission-control
-```
+*   **Backend (`backend/app/api/v1/vault.py`)**
+    *   `GET /api/v1/vault`: Parses `~/.hermes/config.yaml` under `llm.providers`. It maps providers (e.g., `openai`, `openrouter`) and returns masked keys (e.g., `sk-or-v1-****abcd`).
+    *   `POST /api/v1/vault/add`: Accepts `{provider: "openrouter", key: "sk-..."}`. 
+        *   Appends the new key ID to the `api_keys` rotation array in `config.yaml`.
+        *   Writes the actual raw string to `~/.hermes/.env` using the `python-dotenv` library's `set_key()` function (e.g., `OPENROUTER_KEY_3=sk-...`) to ensure existing variables aren't overwritten.
+*   **Frontend (`VaultScreen.tsx`)**
+    *   Build "Provider Cards" (OpenRouter, Anthropic, OpenAI).
+    *   Inside each card, display the pool size (e.g., "3 Active Keys").
+    *   Include logic to add keys, automatically injecting them into the backend rotation pool.
 
-**How to Access:**
-When you run `docker-compose up -d`, simply run `docker logs hermes_tunnel`. It will print a live `https://<random-words>.trycloudflare.com` URL. Click it, and you are instantly in your dashboard.
+### 📈 Domain 4: Analytics Engine (Bridging Gap #11)
+**Goal:** Query real token usage and cost data from SQLite and render it visually, replacing fictional monitoring scripts.
 
----
+*   **Backend (`backend/app/api/v1/analytics.py`)**
+    *   `GET /api/v1/analytics/daily`: Executes an aggregation SQL query against `hermes_state.db`:
+        ```sql
+        SELECT DATE(timestamp) as day, model_id, 
+               SUM(prompt_tokens) as input, 
+               SUM(completion_tokens) as output, 
+               SUM(cost) as total_cost 
+        FROM model_usage 
+        WHERE timestamp >= date('now', '-30 days')
+        GROUP BY DATE(timestamp), model_id;
+        ```
+    *   Formats the SQLite rows into a JSON array optimized for Recharts.
+*   **Frontend (`AnalyticsScreen.tsx`)**
+    *   Implement `<BarChart stacked={true}>` from Recharts. X-Axis: `day`. Y-Axis: `input` vs `output` tokens split by model color. 
+    *   Implement `<PieChart>` for total cost breakdown per provider.
 
-## 3. Phased Execution Roadmap
+### 📱 Domain 5: Messaging & Pairing Management (Bridging Gaps #5 & #6)
+**Goal:** Safely setup Telegram/Discord and manage external user pairing requests.
 
-### Phase 1 — Core Architecture (Highest Priority)
-- **Embedded PTY Terminal (The Biggest Gap)**
-  - **Backend:** Create `/api/pty` WebSocket endpoint in FastAPI. Use Python's built-in `pty` and `subprocess` to spawn `hermes --tui`. Stream ANSI standard out/in. (Because Docker standardizes the environment to Linux, this completely bypasses Windows winpty crashes).
-  - **Frontend:** Integrate `xterm.js` with WebGL addon. This allows full use of the Hermes TUI inside the browser.
-- **Sessions Detail View**
-  - **Backend:** Implement `HermesStateAdapter` to query `~/.hermes/state.db` (SQLite).
-  - **Frontend:** Chat history view with color-coded user/agent roles, tool call expansion, and FTS5 search capabilities.
-- **Real Config Read/Write**
-  - **Backend:** Safely parse, edit, and serialize `~/.hermes/config.yaml` and `~/.hermes/.env` using `ruamel.yaml` to preserve comments.
-  - **Frontend:** Implement a Monaco-powered Web Editor for safe YAML/ENV editing.
-- **Hermes Dashboard Integration**
-  - **Frontend UI:** Ensure the HMC UI includes a dedicated **"Hermes Dashboard"** section in the main navigation. This section will serve as the primary centralized hub to access the embedded terminal and agent telemetry.
+*   **Backend (`backend/app/api/v1/messaging.py`)**
+    *   `POST /api/v1/messaging/setup`: Receives bot tokens and writes them to `.env` using `python-dotenv`. Automatically triggers `subprocess.run(['systemctl', 'restart', 'hermes-gateway'])` (or the Docker equivalent) to apply changes.
+    *   `GET /api/v1/messaging/pairing`: Queries the `pairing_requests` or `messaging_users` table in `hermes_state.db` to fetch pending 6-digit access codes.
+    *   `POST /api/v1/messaging/pairing/{user_id}/approve`: Executes an `UPDATE` SQL statement marking the user as authorized in the DB, instantly allowing the external user to chat with Hermes.
+*   **Frontend (`ChannelsScreen.tsx` & `PairingModal.tsx`)**
+    *   Forms for Bot Tokens.
+    *   A live data table showing "Pending Requests" with "Approve" / "Ban" buttons.
 
-### Phase 2 — Crucial Capabilities
-- **MCP Server Management**
-  - CRUD UI reading the `mcp_servers:` block in `config.yaml`. Test connections and enable/disable standard I/O and SSE servers.
-- **Skills Management**
-  - Read `~/.hermes/skills/`, list installed skills, and implement a hub search/install interface with live logs streaming via WebSockets.
-- **Messaging Channels & Pairing UI**
-  - Forms for Telegram, Discord, etc., writing directly to `.env`.
-  - A pairing table to view pending external messaging users and approve/revoke their access.
-- **Credential Pool UI**
-  - Interface to manage dynamic, rotating API key pools per provider (OpenRouter, Anthropic, OpenAI) instead of fixed keys.
+### 🎨 Domain 6: Theming, Webhooks & Shell Hooks (Bridging Gaps #2, #8, #12)
+**Goal:** Implement the final polish layer for themes, webhooks, and secure shell execution.
 
-### Phase 3 — Polish & Analytics
-- **Analytics Dashboard**
-  - Recharts-powered graphs pulling token usage and cost breakdowns directly from the `model_usage` table in `state.db`.
-- **System Operations**
-  - UI buttons for System Doctor, Security Audit, and Checkpoint/Rollback management.
-- **Theme System**
-  - Dynamic frontend theming loading CSS variables from `~/.hermes/dashboard-themes/`.
-- **Webhook Management**
-  - Create and manage inbound/outbound event routes.
+*   **Themes:** 
+    *   `GET /api/v1/themes`: Scans `~/.hermes/dashboard-themes/*.yaml`.
+    *   Frontend extracts CSS variables (`--bg-color`, `--accent`) from the YAML and applies them to `document.documentElement.style.setProperty()`, allowing instant UI color swaps without refreshing.
+*   **Webhooks & Shell Hooks:**
+    *   CRUD interfaces mapping to `~/.hermes/shell-hooks-allowlist.json`. 
+    *   *Security:* Ensure a one-time HMAC secret generation via Python's `secrets.token_hex(32)` is displayed to the user on creation for payload verification.
 
 ---
 
-## 4. Technical Architecture by Domain
+## 3. Recommended Sprint Execution Order
 
-### A. Frontend Architecture
-- **Stack:** React 18, Vite, TypeScript, Tailwind CSS v4, Recharts, xterm.js, Lucide React.
-- **Tunnel Mapping Fix (Crucial for Cloudflare):**
-```javascript
-// Dynamic URL mapping ensures the app never breaks when accessed via a Tunnel
-export const WS_BASE_URL = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/api/pty';
-export const API_BASE_URL = window.location.origin + '/api/v1';
-```
+To rapidly close these gaps without causing regressions, execute in this exact order:
 
-### B. Backend Architecture
-- **Stack:** FastAPI (Python 3.11+), Uvicorn, SQLModel/SQLAlchemy.
-- **FastAPI Static Mount (Crucial for Single-Port):**
-```python
-from fastapi.staticfiles import StaticFiles
-# Serve React build on the root to share the origin with APIs
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
-```
-- **Adapters (`/services/hermes/`):**
-  - `HermesStateAdapter`: Connects directly to local SQLite databases.
-  - `HermesConfigAdapter`: Reads/writes `.env` and `config.yaml`.
-  - `HermesSkillsAdapter`: Reads/manages installed custom tools.
+1.  **Sprint 5: Analytics & SQLite Aggregation** *(Read-Only, zero risk)*. Build the SQL queries, test them, and wire up `Recharts` on the frontend.
+2.  **Sprint 6: Vault & MCP Management** *(YAML/Env Mutations)*. Implement the `ruamel.yaml` logic for the MCPs and `python-dotenv` logic for the Vault. Test carefully to ensure no config comments are deleted.
+3.  **Sprint 7: Skills Hub & Subprocess Streaming** *(Filesystem & Sockets)*. Build the file scanner for `manifest.json` and map the `Popen` stdout to the existing `/ws/ops` websocket.
+4.  **Sprint 8: Messaging, Pairing & Polish** *(Database Writes)*. Build the Pairing DB approval queries, dynamic theme loader, and Webhook secret generator.
 
-### C. SQLite Database Schema Mapping
-- **`hermes_state.db`:**
-  - `sessions`: Terminal and agent run histories.
-  - `messages`: Full conversation text, roles, and tool calls.
-  - `model_usage`: LLM invocations, token counts, and derived costs.
-  - `agent_logs`: Internal system logs (FTS5 indexed).
-- **`kanban.db`:**
-  - `tasks`: Agent work items, statuses (todo, in-progress, done), and assignees.
-  - `workflows`: Multi-step job trackers.
+## User Review Required
 
----
-
-## 5. Security & Access Consideration
-
-> [!WARNING]
-> Because the Cloudflare Tunnel exposes the dashboard (and thereby your underlying Agent's terminal and config files) to the public internet, Phase 1 must include a lightweight Authentication layer.
->
-> - **Backend:** Wrap FastAPI endpoints with a JWT or HTTP Basic Auth dependency.
-> - **Frontend:** Present a simple Login screen upon loading the tunnel URL. Require an Admin password (set via Docker environment variables) before granting access to the PTY terminal or configuration menus.
+> [!IMPORTANT]
+> Please review the plan above. If this blueprint looks correct and complete, I will proceed with Sprint 5 (Analytics & SQLite Aggregation) first, as recommended. Let me know if you approve this plan to begin execution!

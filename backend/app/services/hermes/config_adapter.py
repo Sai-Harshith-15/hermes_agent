@@ -2,6 +2,7 @@ import os
 import yaml
 from pathlib import Path
 from typing import Dict, Any, List
+from ruamel.yaml import YAML
 
 class HermesConfigAdapter:
     def __init__(self, hermes_dir: str = "~/.hermes"):
@@ -17,6 +18,46 @@ class HermesConfigAdapter:
                 return yaml.safe_load(f) or {}
         except Exception:
             return {}
+
+    def get_raw_config(self) -> str:
+        if not self.config_path.exists():
+            return ""
+        try:
+            with open(self.config_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            return ""
+
+    def update_raw_config(self, content: str) -> bool:
+        try:
+            # Validate YAML syntax using ruamel
+            ryaml = YAML()
+            ryaml.load(content)
+            
+            with open(self.config_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            return True
+        except Exception as e:
+            return False
+
+    def get_raw_env(self) -> str:
+        env_path = self.hermes_dir / ".env"
+        if not env_path.exists():
+            return ""
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            return ""
+
+    def update_raw_env(self, content: str) -> bool:
+        env_path = self.hermes_dir / ".env"
+        try:
+            with open(env_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            return True
+        except Exception:
+            return False
 
     def get_profiles(self) -> List[Dict[str, Any]]:
         profiles = []

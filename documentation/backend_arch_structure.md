@@ -13,7 +13,7 @@ The backend acts as the Mission Control Gateway for the Hermes Agent. Built with
 1. **Telemetry & API Router**
    - **WebSocket Endpoints:** 
      - `/ws/telemetry` for frontend clients to receive live telemetry updates.
-   - **API Routes:** `/api/v1/sandbox`, `/api/v1/warden`, etc., exposing internal Hermes adapters to the frontend.
+   - **API Routes:** `/api/v1/sandbox`, `/api/v1/warden`, `/api/v1/mcp`, `/api/v1/vault`, `/api/v1/skills`, `/api/v1/messaging`, exposing internal Hermes adapters to the frontend.
 
 ## Implemented Features
 - **Embedded PTY Terminal:** A WebSocket endpoint (`/api/pty`) implemented using Python's `pty` and `subprocess` modules that spawns `hermes --tui` behind a POSIX pseudo-terminal for `@xterm/xterm` integration in the frontend.
@@ -22,8 +22,12 @@ The backend acts as the Mission Control Gateway for the Hermes Agent. Built with
 - The FastAPI application utilizes `StaticFiles` to serve the built React frontend (`/dist`) directly from the root `/` path. This entirely bypasses tunnel mapping and CORS issues when deployed behind Cloudflare Tunnels or other proxies.
 2. **Adapters (`backend/app/services/hermes/`)**
    - `HermesStateAdapter`: Reads the `hermes_state.db` SQLite file for token counts, session history, and cost metrics.
-   - `HermesConfigAdapter`: Reads/writes `~/.hermes/config.yaml` and `~/.hermes/.env` using the real Hermes file format.
+   - `KanbanAdapter`: Reads the `kanban.db` SQLite file for workflows and agent execution queues.
+   - `HermesConfigAdapter`: Safely reads/writes `~/.hermes/config.yaml` using `ruamel.yaml` to preserve validation and comments, and securely handles `.env` configurations.
    - `HermesSkillsAdapter`: Reads/manages installed skills in `~/.hermes/skills/`.
+3. **Shell Ops & Proxying**
+   - **`proxy.py`**: Utilizes `httpx.AsyncClient` as a wildcard reverse proxy forwarding to local Streamlit ports seamlessly (e.g. `8501`), avoiding Cloudflare port mappings.
+   - **`ops.py`**: Employs Python's `subprocess` to trigger critical system commands like `hermes doctor` and `hermes audit` securely.
 3. **Database Access**
    - Direct access to local SQLite databases rather than relying on a centralized PostgreSQL server, adhering to the single-host simplicity.
 

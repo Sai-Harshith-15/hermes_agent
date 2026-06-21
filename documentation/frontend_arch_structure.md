@@ -15,10 +15,12 @@ The frontend is built using **React** with **Vite** for fast bundling, utilizing
 1. **Telemetry & Dashboard (`App.tsx` & `DashboardScreen.tsx`)**
    - Establishes a WebSocket connection (`ws://localhost:8000/ws/telemetry`) for read-only events.
    - Categorizes events into active models, server metrics (CPU/RAM), recent logs, and active agents.
-2. **Session Details & History (`MiscScreens.tsx`)**
-   - Displays live session tracking and basic memory retrieval via `ObsidianScreen` using search APIs.
-3. **Management UIs (`MiscScreens.tsx`)**
-   - Includes static placeholder UI for MCP Servers, Tunnels, Output Channels, and Credential Vaults. Currently powered by basic REST endpoints (`hermesApi`, `controlApi`).
+2. **Session Details & Kanban Board (`MiscScreens.tsx` & `KanbanScreen.tsx`)**
+   - Displays live session tracking with Discord-style chat bubbles and collapsible JSON tool execution details.
+   - Real-time Trello-styled Kanban view for distributed agent tasks via `KanbanScreen.tsx`.
+3. **Profiles & Settings UIs (`MiscScreens.tsx`)**
+   - Renders a visually separated active profile card grid allowing system prompt `soul.md` editing natively.
+   - Safe Configuration Editor (`SettingsScreen`) integrated deeply with `@monaco-editor/react` to safely modify `config.yaml` and `.env` alongside shell execution dashboards with modal overlays.
 
 ## [SPECIFICATION - PENDING IMPLEMENTATION]
 *The following features are designed but not yet implemented in the codebase:*
@@ -26,6 +28,7 @@ The frontend is built using **React** with **Vite** for fast bundling, utilizing
 
 ## Implemented Features
 - **Terminal Emulator & Embedded Chat:** A native `TerminalScreen.tsx` using `@xterm/xterm` with the WebGL renderer. It connects to the `/api/pty` WebSocket to run the full Hermes TUI inside the browser.
+- **Reverse Proxy Dashboard:** Using `<iframe src="/api/proxy/hermes-dashboard/">`, seamlessly embeds existing standalone applications (like Streamlit) transparently over tunnels.
 - **Dynamic Routing:** API and WebSocket endpoints dynamically resolve using `window.location.origin` and `window.location.host`, ensuring flawless compatibility with Cloudflare Tunnels under the single-port architecture.
   - **Themes**: Hot-swappable color palettes managed via `~/.hermes/dashboard-themes/`.
   - **Plugins**: A Plugin SDK exposed on `window.__HERMES_PLUGIN_SDK__`, allowing custom UI extensions without rebuilding React.

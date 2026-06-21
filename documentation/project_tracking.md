@@ -18,9 +18,9 @@ The Mission Control dashboard integrates with this tracking system to show the c
 - **Visualization**: The React frontend polls `kanban.db` (via the backend) and renders active agents, their delegated tasks, and status (Todo / In-Progress / Done) dynamically.
 
 ## Project Phases & Status
-As detailed in the `project_version_1.md` roadmap, the project is tracking towards Phase 1 completion:
-- **Phase 1 (Core)**: *In Progress*. The PTY terminal (`@xterm/xterm`) and single-port backend architecture are implemented. Sessions views are pending.
-- **Phase 2 (Important)**: *Pending*. MCP Servers, Skills, Credentials.
-- **Phase 3 (Polish)**: *Pending*. Analytics, Themes, Webhooks.
+As detailed in the `project_version_1.md` roadmap, the project has successfully completed its core architecture:
+- **Phase 1 (Core)**: *Completed*. The PTY terminal (`@xterm/xterm`), single-port backend architecture, Reverse Proxy, FTS5 Sessions view, Kanban boards, Profile Manager, and Monaco Config Editors have been fully implemented.
+- **Phase 2 (Important)**: *Completed*. MCP Servers and Skills management hubs are fully functional, wiring into `~/.hermes/config.yaml` and `.env` pools.
+- **Phase 3 (Polish)**: *Completed*. Analytics queries token metrics, dynamic Themes parse from `~/.hermes/dashboard-themes/`, and Webhooks logic handles HMAC generation.
 
 *(To view active real-time status of agent tasks, see the Active Agents widget in the frontend dashboard).*

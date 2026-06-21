@@ -2,6 +2,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 import { DashboardScreen } from './features/dashboard/DashboardScreen';
+import { AnalyticsScreen } from './features/dashboard/AnalyticsScreen';
+import { NativeDashboardScreen } from './features/dashboard/NativeDashboardScreen';
 import { TerminalScreen } from './features/terminal/TerminalScreen';
 import { KanbanScreen } from './features/kanban/KanbanScreen';
 import { SandboxScreen } from './features/sandbox/SandboxScreen';
@@ -9,7 +11,7 @@ import { WardenScreen } from './features/warden/WardenScreen';
 import { 
   VaultScreen, ProfilesScreen, ObsidianScreen, SessionsScreen, ChatScreen, 
   TunnelsScreen, SettingsScreen, ChannelsScreen, WebhooksScreen, MCPScreen, 
-  PluginsScreen, SkillsScreen, ModelsScreen 
+  PluginsScreen, SkillsScreen, ModelsScreen, ThemesScreen
 } from './features/misc/MiscScreens';
 
 export function AppRoutes() {
@@ -17,6 +19,8 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={<DashboardScreen />} />
+      <Route path="/analytics" element={<AnalyticsScreen />} />
+      <Route path="/native-dashboard" element={<NativeDashboardScreen />} />
       <Route path="/terminal" element={<TerminalScreen />} />
       <Route path="/kanban" element={<KanbanScreen />} />
       <Route path="/sandbox" element={<SandboxScreen />} />
@@ -33,6 +37,7 @@ export function AppRoutes() {
       <Route path="/models" element={<ModelsScreen />} />
       <Route path="/mcps" element={<MCPScreen />} />
       <Route path="/webhooks" element={<WebhooksScreen />} />
+      <Route path="/themes" element={<ThemesScreen />} />
       <Route path="/settings" element={<SettingsScreen />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

@@ -4,10 +4,6 @@
 Hermes Agent is highly extensible through the Model Context Protocol (MCP) and its custom Skills Hub. The dashboard needs to manage these integrations securely and dynamically.
 
 ## MCP Server Management
-> [!WARNING]
-> **[SPECIFICATION - PENDING IMPLEMENTATION]**
-> *The backend MCP configuration and management is not yet fully implemented. The current dashboard UI (`MCPScreen`) is a static mockup.*
-
 The target dashboard provides a CRUD (Create, Read, Update, Delete) interface to manage MCP servers.
 - **Data Source**: Stored directly in `~/.hermes/config.yaml` under the `mcp_servers:` block.
 - **Capabilities**:

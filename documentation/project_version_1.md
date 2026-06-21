@@ -15,19 +15,19 @@ To achieve a true 1:1 parity with the actual Hermes systems, the following roadm
 
 ### Phase 1 — Core (Highest Priority)
 1. ✅ **Embedded Chat / PTY Terminal:** Implemented `@xterm/xterm` in the frontend coupled with a PTY WebSocket (`/api/pty`) in the backend. Integrates `hermes --tui` seamlessly into the "Hermes Dashboard" view.
-1.5 ✅ **Single-Port & Tunnel Architecture:** FastAPI natively serves the Vite static build on `/`, providing instant Cloudflare Tunnel compatibility without hardcoded ports.
-2. **Sessions Detail View:** Full message history with color-coded roles, tool call expansion, and FTS5 search capabilities against the SQLite database.
-3. **Real Config Read/Write:** Direct `.env` and `config.yaml` management aligned with Hermes's native file structures.
+1.5 ✅ **Single-Port & Tunnel Architecture:** FastAPI natively serves the Vite static build on `/`, providing instant Cloudflare Tunnel compatibility without hardcoded ports. Includes reverse proxy mapping to standalone Streamlit instances (`/api/proxy/hermes-dashboard`).
+2. ✅ **Sessions Detail View:** Full message history with color-coded roles, tool call expansion, FTS5 search capabilities against the SQLite database, and Missions (Kanban) boards mapping sub-agent states.
+3. ✅ **Real Config Read/Write:** Direct `.env` and `config.yaml` management aligned with Hermes's native file structures using `ruamel.yaml` and a native `@monaco-editor/react` frontend. Includes shell executors for Ops routines.
 
 ### Phase 2 — Important Features
-4. **MCP Server Management:** Add, test, enable, and disable MCP servers directly to `config.yaml` (`mcp_servers:` block).
-5. **Skills Management:** List installed skills from `~/.hermes/skills/`, enable/disable toggles, and hub search/install logic.
-6. **Messaging Channels UI:** Per-platform setup forms (Telegram, Discord, etc.) that write to `.env` and `config.yaml`.
-7. **Credential Pool UI:** Dynamic routing and rotating key pools per-provider, removing fixed configurations.
-8. **System Operations:** Interface for doctor checks, backup/restore features, and security auditing.
+4. ✅ **MCP Server Management:** Add, test, enable, and disable MCP servers directly to `config.yaml` (`mcp_servers:` block).
+5. ✅ **Skills Management:** List installed skills from `~/.hermes/skills/`, enable/disable toggles, and hub search/install logic.
+6. ✅ **Messaging Channels UI:** Per-platform setup forms (Telegram, Discord, etc.) that write to `.env` and `config.yaml`.
+7. ✅ **Credential Pool UI:** Dynamic routing and rotating key pools per-provider, removing fixed configurations.
+8. ✅ **System Operations:** Interface for doctor checks, backup/restore features, and security auditing.
 
 ### Phase 3 — Polish
-9. **Analytics:** Token usage charts (stacked daily bars) and cost breakdown logic derived from `state.db`.
-10. **Theme System:** A theme picker bridging the frontend to `~/.hermes/dashboard-themes/` configurations.
-11. **Webhook Management:** Interfaces to create, enable, and disable webhook routes.
-12. **Pairing Management:** Approve/revoke external messaging users directly from the browser.
+9. ✅ **Analytics:** Token usage charts (stacked daily bars) and cost breakdown logic derived from `state.db`.
+10. ✅ **Theme System:** A theme picker bridging the frontend to `~/.hermes/dashboard-themes/` configurations.
+11. ✅ **Webhook Management:** Interfaces to create, enable, and disable webhook routes.
+12. ✅ **Pairing Management:** Approve/revoke external messaging users directly from the browser.

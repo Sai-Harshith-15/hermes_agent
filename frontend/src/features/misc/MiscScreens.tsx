@@ -1,40 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Terminal, Bot, 
   Database, Globe, Settings, Search, Plus, 
-  CheckCircle, Clock, Edit3, Save,
+  CheckCircle, Edit3, Save,
   Tv, Link, Shield, ToggleLeft
 } from 'lucide-react';
 import { useDashboardStore } from '../../store/dashboardStore';
-import { addApiKey } from '../../lib/api/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hermesApi } from '../../lib/api/hermes_api';
 import { controlApi } from '../../lib/api/control_api';
+import { getConfigYaml, updateConfigYaml, getEnv, updateEnv, runOp } from '../../lib/api/client';
+import Editor from '@monaco-editor/react';
 
 export function VaultScreen() {
-  const { apiKeys, addApiKey: addKeyToStore } = useDashboardStore();
   const [showAddKey, setShowAddKey] = useState(false);
   const [newKeyForm, setNewKeyForm] = useState({ provider: '', model_name: '', api_key_masked: '', rpm_limit: 60 });
+
+  const [vaultKeys, setVaultKeys] = useState<any[]>([]);
+
+  const fetchVault = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:8000/api/v1/vault', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setVaultKeys(await res.json());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchVault();
+  }, []);
 
   const handleAddKey = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const addedKey = await addApiKey(newKeyForm);
-      addKeyToStore(addedKey);
+      const token = localStorage.getItem('token');
+      await fetch('http://localhost:8000/api/v1/vault/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ provider: newKeyForm.provider, key: newKeyForm.api_key_masked })
+      });
       setNewKeyForm({ provider: '', model_name: '', api_key_masked: '', rpm_limit: 60 });
       setShowAddKey(false);
+      fetchVault();
     } catch (err) {
       console.error("Error saving API key:", err);
-      addKeyToStore({ ...newKeyForm, id: Date.now(), current_usage_pct: 0, status: 'Active' });
-      setShowAddKey(false);
     }
   };
 
-  const keysToDisplay = apiKeys.length > 0 ? apiKeys : [
-    { id: 1, provider: 'OpenCode Zen', model_name: 'opencode/big-pickle', api_key_masked: 'sk-zen-...f8a2', rpm_limit: 60, current_usage_pct: 45, status: 'Active' },
-    { id: 2, provider: 'DeepSeek', model_name: 'deepseek-chat', api_key_masked: 'sk-dps-...91x', rpm_limit: 100, current_usage_pct: 80, status: 'Rate-Limited' },
-    { id: 3, provider: 'OpenRouter', model_name: 'google/gemini-pro', api_key_masked: 'sk-opr-...zz1', rpm_limit: 20, current_usage_pct: 5, status: 'Fallback Ready' },
-  ];
+  const keysToDisplay = vaultKeys.length > 0 ? vaultKeys : [];
 
   return (
     <div className="max-w-5xl">
@@ -127,9 +144,9 @@ export function VaultScreen() {
                 <tr key={key.id || i} className="hover:bg-gray-800/30 transition-colors">
                   <td className="px-6 py-4">
                     <p className="font-medium text-gray-200">{key.provider}</p>
-                    <p className="text-xs text-gray-500">{key.model_name}</p>
+                    <p className="text-xs text-gray-500">{key.key_id}</p>
                   </td>
-                  <td className="px-6 py-4 font-mono text-xs">{key.api_key_masked}</td>
+                  <td className="px-6 py-4 font-mono text-xs">{key.masked_key}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span>{Math.round(key.current_usage_pct || 0)}%</span>
@@ -393,45 +410,98 @@ export function SessionsScreen() {
     queryKey: ['sessions'],
     queryFn: () => hermesApi.getSessions(50)
   });
+  
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+
+  const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
+    queryKey: ['messages', selectedSessionId],
+    queryFn: () => hermesApi.getMessages(selectedSessionId!),
+    enabled: !!selectedSessionId
+  });
+
   const { agentRuns } = useDashboardStore();
   
-  const sessionsToDisplay = liveSessions.length > 0 ? liveSessions.map((s: any) => ({
-    id: s.id || s.session_id || 'unknown',
-    profile_name: s.agent_name || 'Agent',
-    role: s.task || 'Task Executing',
-    model_route: 'Hermes DB',
-    status: s.status || 'Active'
-  })) : agentRuns.length > 0 ? agentRuns : [];
+  const sessionsToDisplay = liveSessions.length > 0 ? liveSessions : agentRuns;
 
   if (isLoading) return <div className="text-gray-400 p-6">Loading sessions from DB...</div>;
 
   return (
-    <div className="max-w-5xl space-y-6">
-      <div className="flex justify-between items-end mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Active Agent Sessions</h2>
+    <div className="h-[calc(100vh-8rem)] flex gap-6">
+      <div className="w-1/3 bg-gray-900 border border-gray-800 rounded-xl flex flex-col overflow-hidden shadow-sm shrink-0">
+        <div className="p-4 border-b border-gray-800 bg-gray-800/30">
+          <h3 className="font-medium text-gray-200">Active Sessions</h3>
+        </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+          {sessionsToDisplay.map((sess: any, i: number) => {
+            const id = sess.id || sess.session_id || `unknown-${i}`;
+            const isActive = selectedSessionId === id;
+            return (
+              <div 
+                key={id} 
+                onClick={() => setSelectedSessionId(id)}
+                className={`p-4 rounded-lg cursor-pointer border transition-all ${isActive ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-50' : 'bg-gray-800 border-gray-700 hover:border-gray-500 text-gray-300'}`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-bold flex items-center text-sm"><Bot size={14} className="mr-2 text-emerald-400"/> {sess.agent_name || 'Agent'}</h4>
+                  <span className={`w-2 h-2 rounded-full ${sess.status === 'Active' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-500'}`}></span>
+                </div>
+                <p className="text-xs text-gray-500 font-mono truncate">{id}</p>
+                <p className="text-xs mt-2 text-gray-400 truncate">{sess.task || 'Executing Task...'}</p>
+              </div>
+            );
+          })}
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {sessionsToDisplay.map((sess: any, i: number) => (
-          <div key={sess.id || i} className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm relative overflow-hidden">
-            <div className={`absolute top-0 left-0 w-1 h-full ${sess.status === 'Active' ? 'bg-emerald-500' : 'bg-gray-600'}`}></div>
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h4 className="text-gray-200 font-bold flex items-center"><Bot size={16} className="mr-2 text-emerald-400"/> {sess.profile_name}</h4>
-                <p className="text-xs text-gray-500 font-mono mt-1">{sess.id}</p>
-              </div>
-              <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded border ${sess.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-gray-800 text-gray-500 border-gray-700'}`}>
-                {sess.status}
-              </span>
+
+      <div className="flex-1 bg-gray-900 border border-gray-800 rounded-xl flex flex-col shadow-sm overflow-hidden">
+        {selectedSessionId ? (
+          <>
+            <div className="p-4 border-b border-gray-800 bg-gray-800/30 flex items-center justify-between">
+              <h3 className="font-medium text-gray-200 font-mono text-sm">Session ID: {selectedSessionId}</h3>
             </div>
-            <p className="text-sm text-gray-300 bg-gray-950 p-3 rounded border border-gray-800 mb-4">{sess.role} running on route: {sess.model_route}</p>
-            <div className="flex justify-between items-center text-xs text-gray-500">
-              <span className="flex items-center"><Clock size={12} className="mr-1"/> Active Connection Feed</span>
-              <button className="text-emerald-500 hover:text-emerald-400 font-medium">Connect Sandbox</button>
+            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4 bg-gray-950">
+              {isLoadingMessages ? (
+                <div className="text-gray-500 text-center">Loading messages...</div>
+              ) : messages.length === 0 ? (
+                <div className="text-gray-500 text-center">No messages recorded in this session.</div>
+              ) : (
+                messages.map((msg: any, i: number) => {
+                  const isUser = msg.role === 'user';
+                  const isTool = msg.role === 'tool' || msg.tool_calls;
+                  
+                  if (isTool) {
+                    return (
+                      <div key={i} className="flex justify-start">
+                        <details className="group max-w-[85%] bg-gray-900 border border-gray-800 rounded-xl overflow-hidden cursor-pointer">
+                          <summary className="p-3 text-xs text-gray-400 hover:text-gray-200 list-none flex items-center select-none font-mono">
+                            <span className="mr-2 group-open:hidden">▶</span>
+                            <span className="mr-2 hidden group-open:inline">▼</span>
+                            <span>🛠️ Executed {msg.name || 'tool_call'}</span>
+                          </summary>
+                          <div className="p-3 border-t border-gray-800 bg-gray-950 text-[10px] text-gray-500 font-mono overflow-x-auto max-h-48 custom-scrollbar">
+                            <pre>{msg.content || JSON.stringify(msg.tool_calls, null, 2)}</pre>
+                          </div>
+                        </details>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[75%] p-4 rounded-xl text-sm ${isUser ? 'bg-blue-600/20 border border-blue-500/30 text-blue-100 rounded-br-none' : 'bg-gray-800/50 border border-gray-700 text-gray-200 rounded-bl-none'}`}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-500">
+            Select a session to view chat history.
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
@@ -534,56 +604,218 @@ export function TunnelsScreen() {
 }
 
 export function SettingsScreen() {
-  const { hostMetrics } = useDashboardStore();
-  return (
-    <div className="max-w-3xl space-y-6">
-      <div><h2 className="text-2xl font-bold text-white">System Configuration</h2></div>
-      <div className="space-y-4">
-        <SettingsCard title="Global Context Compression" desc="Auto-compress logs when token limit reaches 80% to save LiteLLM budgets." status="Enabled" />
-        <SettingsCard title="Oracle NeverIdle Daemon" desc={`Maintains CPU load > 10% using stress-ng via cron. Current Load: ${hostMetrics.cpu_usage || 0}%`} status="Active" />
-        <SettingsCard title="Edge-TTS Binding" desc="Microsoft Text-to-Speech python wrapper for zero-cost voiceovers." status="Operational" />
-      </div>
-    </div>
-  );
-}
+  const [activeTab, setActiveTab] = useState<'config' | 'env' | 'ops'>('config');
+  const [configContent, setConfigContent] = useState('');
+  const [envContent, setEnvContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [opLogs, setOpLogs] = useState('');
+  const [isOpModalOpen, setIsOpModalOpen] = useState(false);
 
-function SettingsCard({ title, desc, status }: { title: string, desc: string, status: string }) {
+  React.useEffect(() => {
+    getConfigYaml().then(res => setConfigContent(res.content));
+    getEnv().then(res => setEnvContent(res.content));
+  }, []);
+
+  const handleSave = async () => {
+    setIsLoading(true);
+    try {
+      if (activeTab === 'config') await updateConfigYaml(configContent);
+      if (activeTab === 'env') await updateEnv(envContent);
+      alert('Saved successfully!');
+    } catch (e) {
+      alert('Failed to save!');
+    }
+    setIsLoading(false);
+  };
+
+  const executeOp = async (op: string) => {
+    setIsOpModalOpen(true);
+    setOpLogs(`Executing ${op}...\nWaiting for system response...`);
+    try {
+      const res = await runOp(op);
+      setOpLogs((prev) => prev + '\n\n' + res.logs);
+    } catch (e: any) {
+      setOpLogs((prev) => prev + '\n\nError: ' + e.message);
+    }
+  };
+
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-lg p-5 flex justify-between items-center shadow-sm hover:border-gray-700 transition-colors cursor-pointer">
-      <div>
-        <h4 className="text-gray-200 font-medium">{title}</h4>
-        <p className="text-sm text-gray-500 mt-1">{desc}</p>
+    <div className="max-w-6xl space-y-6 h-full flex flex-col">
+      <div className="flex justify-between items-center shrink-0">
+        <div>
+          <h2 className="text-2xl font-bold text-white">System Settings & Ops</h2>
+          <p className="text-sm text-gray-400">Safely manage config.yaml, .env, and execute system commands.</p>
+        </div>
+        {(activeTab === 'config' || activeTab === 'env') && (
+          <button onClick={handleSave} disabled={isLoading} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center transition-colors disabled:opacity-50">
+            <Save size={16} className="mr-2"/> {isLoading ? 'Saving...' : 'Save Changes'}
+          </button>
+        )}
       </div>
-      <div className="text-right flex flex-col items-end">
-        <span className="text-xs px-3 py-1 bg-gray-800 border border-gray-700 rounded-full text-emerald-400 mb-2">{status}</span>
-        <button className="text-gray-400 hover:text-gray-200 text-sm flex items-center"><Edit3 size={14} className="mr-1"/> Edit</button>
+
+      <div className="flex space-x-2 border-b border-gray-800 pb-2 shrink-0">
+        <button onClick={() => setActiveTab('config')} className={`px-4 py-2 rounded font-medium text-sm transition-colors ${activeTab === 'config' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-gray-200'}`}>config.yaml</button>
+        <button onClick={() => setActiveTab('env')} className={`px-4 py-2 rounded font-medium text-sm transition-colors ${activeTab === 'env' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-gray-200'}`}>.env Vault</button>
+        <button onClick={() => setActiveTab('ops')} className={`px-4 py-2 rounded font-medium text-sm transition-colors ${activeTab === 'ops' ? 'bg-emerald-500/20 text-emerald-400' : 'text-gray-400 hover:text-gray-200'}`}>System Ops</button>
+      </div>
+
+      <div className="flex-1 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm relative">
+        {activeTab === 'config' && (
+          <Editor
+            height="100%"
+            defaultLanguage="yaml"
+            theme="vs-dark"
+            value={configContent}
+            onChange={(val) => setConfigContent(val || '')}
+            options={{ minimap: { enabled: false }, fontSize: 14 }}
+          />
+        )}
+        {activeTab === 'env' && (
+          <Editor
+            height="100%"
+            defaultLanguage="shell"
+            theme="vs-dark"
+            value={envContent}
+            onChange={(val) => setEnvContent(val || '')}
+            options={{ minimap: { enabled: false }, fontSize: 14 }}
+          />
+        )}
+        {activeTab === 'ops' && (
+          <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 h-full content-start">
+            <div onClick={() => executeOp('doctor')} className="bg-gray-800 hover:bg-gray-700 border border-gray-700 p-6 rounded-xl cursor-pointer text-center group transition-colors">
+              <Shield size={32} className="mx-auto mb-4 text-blue-400 group-hover:text-blue-300" />
+              <h3 className="font-bold text-gray-200 text-lg">Run Doctor</h3>
+              <p className="text-sm text-gray-400 mt-2">Diagnose dependencies and network health.</p>
+            </div>
+            <div onClick={() => executeOp('audit')} className="bg-gray-800 hover:bg-gray-700 border border-gray-700 p-6 rounded-xl cursor-pointer text-center group transition-colors">
+              <Search size={32} className="mx-auto mb-4 text-amber-400 group-hover:text-amber-300" />
+              <h3 className="font-bold text-gray-200 text-lg">Security Audit</h3>
+              <p className="text-sm text-gray-400 mt-2">Verify MCP sandboxes and credentials.</p>
+            </div>
+            <div onClick={() => executeOp('backup')} className="bg-gray-800 hover:bg-gray-700 border border-gray-700 p-6 rounded-xl cursor-pointer text-center group transition-colors">
+              <Database size={32} className="mx-auto mb-4 text-emerald-400 group-hover:text-emerald-300" />
+              <h3 className="font-bold text-gray-200 text-lg">Backup Database</h3>
+              <p className="text-sm text-gray-400 mt-2">Snapshot SQLite databases instantly.</p>
+            </div>
+          </div>
+        )}
+
+        {isOpModalOpen && (
+          <div className="absolute inset-0 bg-gray-950/90 backdrop-blur-sm flex items-center justify-center p-6 z-10">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-3xl flex flex-col overflow-hidden h-[80%] shadow-2xl">
+              <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-800/30">
+                <h3 className="font-medium text-gray-200 flex items-center"><Terminal size={16} className="mr-2"/> Operation Output</h3>
+                <button onClick={() => setIsOpModalOpen(false)} className="text-gray-400 hover:text-white">Close</button>
+              </div>
+              <div className="flex-1 p-4 bg-black overflow-y-auto custom-scrollbar">
+                <pre className="text-emerald-400 font-mono text-sm whitespace-pre-wrap">{opLogs}</pre>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 export function ChannelsScreen() {
-  const channels = [{ id: 1, platform: 'YouTube API v3', name: 'Auto_Tech_Shorts', status: 'Connected', quota: '450/10000', nextCron: '08:00 AM' }];
+  const [platform, setPlatform] = useState('Telegram');
+  const [botToken, setBotToken] = useState('');
+  const [pairingRequests, setPairingRequests] = useState<any[]>([]);
+
+  const fetchPairing = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:8000/api/v1/messaging/pairing', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setPairingRequests(await res.json());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPairing();
+  }, []);
+
+  const handleSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:8000/api/v1/messaging/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ platform, bot_token: botToken })
+      });
+      const data = await res.json();
+      alert(data.message);
+      setBotToken('');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleApprove = async (userId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:8000/api/v1/messaging/pairing/${userId}/approve`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchPairing();
+      alert(`User ${userId} approved`);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="max-w-5xl space-y-6">
-      <div><h2 className="text-2xl font-bold text-white">Output Channels</h2></div>
+      <div><h2 className="text-2xl font-bold text-white">Output Channels & Pairing</h2></div>
+      
+      <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-sm">
+        <h3 className="text-lg font-bold text-gray-200 mb-4">Setup Bot Gateway</h3>
+        <form onSubmit={handleSetup} className="flex space-x-4 items-end">
+          <div className="flex-1">
+            <label className="block text-xs text-gray-400 mb-1">PLATFORM</label>
+            <select className="w-full bg-gray-950 border border-gray-700 rounded p-2 text-sm text-white" value={platform} onChange={e => setPlatform(e.target.value)}>
+              <option value="Telegram">Telegram</option>
+              <option value="Discord">Discord</option>
+            </select>
+          </div>
+          <div className="flex-[2]">
+            <label className="block text-xs text-gray-400 mb-1">BOT TOKEN</label>
+            <input type="password" required className="w-full bg-gray-950 border border-gray-700 rounded p-2 text-sm text-white" value={botToken} onChange={e => setBotToken(e.target.value)} />
+          </div>
+          <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded text-sm transition-colors">Apply Config</button>
+        </form>
+      </div>
+
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm">
         <table className="w-full text-left text-sm text-gray-400">
           <thead className="bg-gray-800/30 text-xs uppercase text-gray-500 border-b border-gray-800">
             <tr>
+              <th className="px-6 py-4 font-medium">User ID</th>
               <th className="px-6 py-4 font-medium">Platform</th>
-              <th className="px-6 py-4 font-medium">Account Name</th>
-              <th className="px-6 py-4 font-medium">Status</th>
+              <th className="px-6 py-4 font-medium">Verification Code</th>
+              <th className="px-6 py-4 font-medium text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800">
-            {channels.map(ch => (
-              <tr key={ch.id} className="hover:bg-gray-800/30">
-                <td className="px-6 py-4 font-medium text-gray-200 flex items-center"><Tv size={16} className="mr-2 text-gray-500"/>{ch.platform}</td>
-                <td className="px-6 py-4 font-mono text-emerald-400">{ch.name}</td>
-                <td className="px-6 py-4"><span className={`text-xs px-2 py-1 rounded uppercase font-bold border bg-emerald-500/10 text-emerald-400 border-emerald-500/30`}>{ch.status}</span></td>
+            {pairingRequests.map((req, i) => (
+              <tr key={i} className="hover:bg-gray-800/30">
+                <td className="px-6 py-4 font-medium text-gray-200">{req.user_id}</td>
+                <td className="px-6 py-4 flex items-center"><Tv size={16} className="mr-2 text-gray-500"/>{req.platform}</td>
+                <td className="px-6 py-4 font-mono text-emerald-400">{req.code}</td>
+                <td className="px-6 py-4 text-right">
+                  <button onClick={() => handleApprove(req.user_id)} className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 px-3 py-1.5 rounded text-xs">Approve</button>
+                </td>
               </tr>
             ))}
+            {pairingRequests.length === 0 && (
+              <tr><td colSpan={4} className="px-6 py-4 text-center text-gray-500">No pending pairing requests</td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -592,41 +824,222 @@ export function ChannelsScreen() {
 }
 
 export function WebhooksScreen() {
+  const [webhooks, setWebhooks] = useState<any[]>([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newHook, setNewHook] = useState({ name: '', target_url: '' });
+
+  const fetchWebhooks = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:8000/api/v1/messaging/webhooks', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setWebhooks(await res.json());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchWebhooks();
+  }, []);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:8000/api/v1/messaging/webhooks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(newHook)
+      });
+      const data = await res.json();
+      alert(`Created! Your one-time HMAC secret is:\n\n${data.one_time_secret}\n\nPlease save this, you will not see it again.`);
+      setShowAdd(false);
+      setNewHook({ name: '', target_url: '' });
+      fetchWebhooks();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="max-w-4xl space-y-6">
-      <div><h2 className="text-2xl font-bold text-white">Webhooks & Alerts</h2></div>
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center text-center space-y-4 py-16">
-        <Link size={48} className="text-gray-600 mb-2"/>
-        <h3 className="text-xl font-bold text-gray-300">No Webhooks Configured</h3>
-        <button className="bg-emerald-600/20 text-emerald-400 border border-emerald-600 hover:bg-emerald-600 hover:text-white transition-colors px-6 py-2 rounded-lg text-sm font-medium mt-4">Create New Webhook</button>
+      <div className="flex justify-between items-center">
+        <div><h2 className="text-2xl font-bold text-white">Webhooks & Shell Hooks</h2></div>
+        <button onClick={() => setShowAdd(!showAdd)} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"><Plus size={16} className="inline mr-1"/> Create Hook</button>
       </div>
+
+      {showAdd && (
+        <form onSubmit={handleAdd} className="bg-gray-900 border border-emerald-500/30 p-5 rounded-xl mb-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">NAME / IDENTIFIER</label>
+              <input type="text" required placeholder="e.g. github-push-trigger" className="w-full bg-gray-950 border border-gray-700 rounded p-2 text-sm text-white" value={newHook.name} onChange={e => setNewHook({...newHook, name: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">TARGET SCRIPT / URL</label>
+              <input type="text" required placeholder="e.g. /home/user/deploy.sh" className="w-full bg-gray-950 border border-gray-700 rounded p-2 text-sm text-white" value={newHook.target_url} onChange={e => setNewHook({...newHook, target_url: e.target.value})} />
+            </div>
+          </div>
+          <button type="submit" className="bg-emerald-600 text-white px-4 py-2 rounded text-sm transition-colors">Generate Secret & Save</button>
+        </form>
+      )}
+
+      {webhooks.length > 0 ? (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm">
+          <table className="w-full text-left text-sm text-gray-400">
+            <thead className="bg-gray-800/30 text-xs uppercase text-gray-500 border-b border-gray-800">
+              <tr>
+                <th className="px-6 py-4 font-medium">Hook Name</th>
+                <th className="px-6 py-4 font-medium">Target</th>
+                <th className="px-6 py-4 font-medium">Hook ID (Truncated)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {webhooks.map((wh, idx) => (
+                <tr key={idx} className="hover:bg-gray-800/30">
+                  <td className="px-6 py-4 font-medium text-gray-200">{wh.name}</td>
+                  <td className="px-6 py-4 font-mono text-emerald-400 text-xs">{wh.target_url}</td>
+                  <td className="px-6 py-4 font-mono text-xs">{wh.id}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center text-center space-y-4 py-16">
+          <Link size={48} className="text-gray-600 mb-2"/>
+          <h3 className="text-xl font-bold text-gray-300">No Webhooks Configured</h3>
+        </div>
+      )}
     </div>
   );
 }
 
 export function MCPScreen() {
-  const whitelists = [
-    { id: 1, resource: 'FileSystem (Read/Write)', path: '/app/frontend/src', status: 'Whitelisted', hits: 142 },
-    { id: 2, resource: 'FileSystem (Read)', path: '/root/.ssh', status: 'Blocked (Snitch)', hits: 3 },
-  ];
+  const [mcps, setMcps] = useState<any[]>([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newMcp, setNewMcp] = useState({ name: '', type: 'stdio', command_or_url: '' });
+
+  const fetchMcps = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:8000/api/v1/mcp', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setMcps(await res.json());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMcps();
+  }, []);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      await fetch('http://localhost:8000/api/v1/mcp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(newMcp)
+      });
+      setShowAdd(false);
+      setNewMcp({ name: '', type: 'stdio', command_or_url: '' });
+      fetchMcps();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handlePing = async (mcp: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:8000/api/v1/mcp/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ type: mcp.type, command_or_url: mcp.command_or_url })
+      });
+      const data = await res.json();
+      alert(`Ping ${data.status}: ${data.message}`);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDelete = async (name: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:8000/api/v1/mcp/${name}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchMcps();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="max-w-5xl space-y-6">
-      <div><h2 className="text-2xl font-bold text-white flex items-center"><Shield className="mr-2 text-emerald-500"/> MCP Snitch Security</h2></div>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center"><Shield className="mr-2 text-emerald-500"/> MCP Server Manager</h2>
+        </div>
+        <button onClick={() => setShowAdd(!showAdd)} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center transition-colors">
+          <Plus size={16} className="mr-1"/> Add Server
+        </button>
+      </div>
+
+      {showAdd && (
+        <form onSubmit={handleAdd} className="bg-gray-900 border border-emerald-500/30 p-5 rounded-xl mb-6 space-y-4 max-w-lg">
+          <h3 className="text-md font-bold text-white">Register MCP Server</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">NAME</label>
+              <input type="text" required placeholder="e.g. github-mcp" className="w-full bg-gray-950 border border-gray-700 rounded p-2 text-sm text-white" value={newMcp.name} onChange={e => setNewMcp({...newMcp, name: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">TYPE</label>
+              <select className="w-full bg-gray-950 border border-gray-700 rounded p-2 text-sm text-white" value={newMcp.type} onChange={e => setNewMcp({...newMcp, type: e.target.value})}>
+                <option value="stdio">stdio</option>
+                <option value="sse">sse</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">COMMAND / URL</label>
+            <input type="text" required placeholder="e.g. npx -y @modelcontextprotocol/server-github" className="w-full bg-gray-950 border border-gray-700 rounded p-2 text-sm text-white font-mono" value={newMcp.command_or_url} onChange={e => setNewMcp({...newMcp, command_or_url: e.target.value})} />
+          </div>
+          <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded text-sm transition-colors">
+            Save Server
+          </button>
+        </form>
+      )}
+
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm">
         <table className="w-full text-left text-sm text-gray-400">
           <thead className="bg-gray-900/50 text-xs uppercase text-gray-500 border-b border-gray-800">
             <tr>
-              <th className="px-6 py-4 font-medium">Resource Type</th>
-              <th className="px-6 py-4 font-medium">Path / Constraint</th>
-              <th className="px-6 py-4 font-medium">Proxy Verdict</th>
+              <th className="px-6 py-4 font-medium">Server Name</th>
+              <th className="px-6 py-4 font-medium">Type</th>
+              <th className="px-6 py-4 font-medium">Command / URL</th>
+              <th className="px-6 py-4 font-medium text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800">
-            {whitelists.map(mcp => (
-              <tr key={mcp.id} className="hover:bg-gray-800/30">
-                <td className="px-6 py-4 font-medium text-gray-200">{mcp.resource}</td>
-                <td className="px-6 py-4 font-mono text-xs">{mcp.path}</td>
-                <td className="px-6 py-4"><span className={`text-xs px-2 py-1 rounded uppercase font-bold border ${mcp.status.includes('Blocked') ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'}`}>{mcp.status}</span></td>
+            {mcps.map((mcp, idx) => (
+              <tr key={idx} className="hover:bg-gray-800/30">
+                <td className="px-6 py-4 font-medium text-gray-200">{mcp.name}</td>
+                <td className="px-6 py-4 font-mono text-xs"><span className="bg-gray-800 px-2 py-1 rounded text-emerald-400">{mcp.type}</span></td>
+                <td className="px-6 py-4 font-mono text-xs">{mcp.command_or_url}</td>
+                <td className="px-6 py-4 text-right flex justify-end space-x-2">
+                  <button onClick={() => handlePing(mcp)} className="text-blue-400 hover:text-blue-300 text-xs bg-blue-500/10 px-2 py-1 rounded">Ping</button>
+                  <button onClick={() => handleDelete(mcp.name)} className="text-red-400 hover:text-red-300 text-xs bg-red-500/10 px-2 py-1 rounded">Delete</button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -636,14 +1049,126 @@ export function MCPScreen() {
   );
 }
 
+import { Terminal as XTerminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import '@xterm/xterm/css/xterm.css';
+
 export function PluginsScreen() {
+  const [skills, setSkills] = useState<any[]>([]);
+  const [installingSkill, setInstallingSkill] = useState<string | null>(null);
+  const termRef = React.useRef<HTMLDivElement>(null);
+  const xtermRef = React.useRef<XTerminal | null>(null);
+
+  const fetchSkills = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:8000/api/v1/skills/local', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setSkills(await res.json());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchSkills();
+  }, []);
+
+  useEffect(() => {
+    if (installingSkill && termRef.current && !xtermRef.current) {
+      const term = new XTerminal({
+        theme: { background: '#030712', foreground: '#10b981' },
+        fontFamily: 'monospace',
+        fontSize: 12
+      });
+      const fitAddon = new FitAddon();
+      term.loadAddon(fitAddon);
+      term.open(termRef.current);
+      fitAddon.fit();
+      xtermRef.current = term;
+
+      const token = localStorage.getItem('token');
+      const ws = new WebSocket(`ws://localhost:8000/ws/telemetry?token=${token}`);
+      
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === "ops_log" && msg.data.skill_id === installingSkill) {
+            term.write(msg.data.log.replace(/\n/g, '\r\n'));
+          }
+        } catch(e) {}
+      };
+
+      return () => {
+        ws.close();
+        term.dispose();
+        xtermRef.current = null;
+      };
+    }
+  }, [installingSkill]);
+
+  const handleToggle = async (id: string, enabled: boolean) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch('http://localhost:8000/api/v1/skills/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ skill_id: id, enabled: !enabled })
+      });
+      fetchSkills();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleInstall = async (id: string) => {
+    setInstallingSkill(id);
+    try {
+      const token = localStorage.getItem('token');
+      await fetch('http://localhost:8000/api/v1/skills/install', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ skill_id: id })
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
-    <div className="max-w-4xl space-y-6">
-      <div><h2 className="text-2xl font-bold text-white">Hermes Plugins</h2></div>
-      <div className="grid grid-cols-2 gap-6">
-        <SettingsCard title="Floci AWS Emulation Plugin" desc="Allows agents to interface with local S3/Dynamo DB mocks." status="Enabled" />
-        <SettingsCard title="Social Media Scraper" desc="Pulls trends from Reddit & X APIs for the YouTube workflow." status="Enabled" />
+    <div className="max-w-5xl space-y-6 relative">
+      <div><h2 className="text-2xl font-bold text-white">Skills Hub & Marketplace</h2></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {skills.map(s => (
+          <div key={s.id} className="bg-gray-900 border border-gray-800 rounded-lg p-5 shadow-sm hover:border-gray-700 transition-colors">
+            <div className="flex justify-between items-start mb-2">
+              <h4 className="text-gray-200 font-bold">{s.name}</h4>
+              <span className={`text-xs px-2 py-1 rounded-full uppercase font-bold border ${s.enabled ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-gray-800 text-gray-400 border-gray-700'}`}>{s.enabled ? 'Enabled' : 'Disabled'}</span>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">{s.description || 'No description provided.'}</p>
+            <div className="flex justify-between items-center text-xs font-mono">
+              <span className="text-gray-400">v{s.version || '1.0'}</span>
+              <div className="space-x-2 flex">
+                <button onClick={() => handleToggle(s.id, s.enabled)} className="text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 rounded">{s.enabled ? 'Disable' : 'Enable'}</button>
+                <button onClick={() => handleInstall(s.id)} className="text-blue-400 hover:text-blue-300 border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 rounded flex items-center"><Terminal size={14} className="mr-1"/> Install / Update</button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
+
+      {installingSkill && (
+        <div className="absolute inset-0 bg-gray-950/90 backdrop-blur-sm flex justify-center items-center z-50 p-6">
+          <div className="bg-gray-900 border border-emerald-500/50 rounded-xl w-full max-w-4xl h-[70vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 border-b border-gray-800 bg-gray-800/50 flex justify-between items-center">
+              <h3 className="font-bold text-gray-200 flex items-center"><Terminal size={16} className="mr-2 text-emerald-500"/> Installing {installingSkill}...</h3>
+              <button onClick={() => setInstallingSkill(null)} className="text-gray-400 hover:text-white">Close</button>
+            </div>
+            <div className="flex-1 p-4 bg-gray-950" ref={termRef}></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -702,6 +1227,48 @@ export function ModelsScreen() {
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+import { Palette } from 'lucide-react';
+
+export function ThemesScreen() {
+  const [themes, setThemes] = useState<any[]>([]);
+
+  const fetchThemes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:8000/api/v1/messaging/themes', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setThemes(await res.json());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchThemes();
+  }, []);
+
+  const handleApply = (theme: any) => {
+    alert(`Applied theme: ${theme.name}`);
+  };
+
+  return (
+    <div className="max-w-5xl space-y-6">
+      <div><h2 className="text-2xl font-bold text-white">Dashboard Themes</h2></div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {themes.map(t => (
+          <div key={t.id} className="bg-gray-900 border border-gray-800 rounded-lg p-5 shadow-sm hover:border-gray-700 transition-colors flex flex-col justify-between h-32">
+            <div className="flex justify-between items-start">
+              <h4 className="text-gray-200 font-bold flex items-center"><Palette size={16} className="mr-2 text-gray-500" style={{ color: t.accent || 'inherit' }}/>{t.name}</h4>
+            </div>
+            <button onClick={() => handleApply(t)} className="w-full mt-4 bg-gray-800 hover:bg-gray-700 text-gray-300 py-1.5 rounded text-sm transition-colors border border-gray-700">Apply Theme</button>
+          </div>
+        ))}
       </div>
     </div>
   );

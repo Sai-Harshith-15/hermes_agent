@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Activity, LayoutDashboard, Terminal, Kanban, Key, Bot, 
   Network, Database, Globe, Settings, LogOut,
-  ChevronRight, 
+  ChevronRight, BarChart2,
   Tv, Link, Shield, Puzzle, Zap, Box, History, MessageCircle,
   ShieldAlert
 } from 'lucide-react';
@@ -129,7 +129,9 @@ export default function AgentCommandCenter() {
         <nav className="flex-1 overflow-y-auto py-4 custom-scrollbar">
           <NavSection title="System Overview">
             <NavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" current={currentScreen} set={(id) => navigate(`/${id}`)} />
-            <NavItem id="terminal" icon={Terminal} label="Hermes Dashboard" current={currentScreen} set={(id) => navigate(`/${id}`)} />
+            <NavItem id="analytics" icon={BarChart2} label="Analytics" current={currentScreen} set={(id) => navigate(`/${id}`)} />
+            <NavItem id="native-dashboard" icon={Tv} label="Native Dashboard" current={currentScreen} set={(id) => navigate(`/${id}`)} />
+            <NavItem id="terminal" icon={Terminal} label="Hermes TUI" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="warden" icon={ShieldAlert} label="Warden Overseer" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="tunnels" icon={Globe} label="Tunnels & Deploy" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="channels" icon={Tv} label="Output Channels" current={currentScreen} set={(id) => navigate(`/${id}`)} />
@@ -154,6 +156,7 @@ export default function AgentCommandCenter() {
             <NavItem id="vault" icon={Key} label="API Vault (LiteLLM)" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="mcps" icon={Shield} label="MCP Snitch Security" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="webhooks" icon={Link} label="Webhooks" current={currentScreen} set={(id) => navigate(`/${id}`)} />
+            <NavItem id="themes" icon={Puzzle} label="Dashboard Themes" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="settings" icon={Settings} label="System Config" current={currentScreen} set={(id) => navigate(`/${id}`)} />
           </NavSection>
         </nav>

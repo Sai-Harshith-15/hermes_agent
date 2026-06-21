@@ -48,3 +48,23 @@ export async function injectTask(taskData: any) {
     body: JSON.stringify(taskData),
   });
 }
+
+export async function getConfigYaml() {
+  return fetchApi('/config/yaml');
+}
+
+export async function updateConfigYaml(content: string) {
+  return fetchApi('/config/yaml', { method: 'PUT', body: JSON.stringify({ content }) });
+}
+
+export async function getEnv() {
+  return fetchApi('/config/env');
+}
+
+export async function updateEnv(content: string) {
+  return fetchApi('/config/env', { method: 'PUT', body: JSON.stringify({ content }) });
+}
+
+export async function runOp(op: string) {
+  return fetchApi(`/ops/${op}`, { method: 'POST' });
+}

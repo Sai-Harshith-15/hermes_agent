@@ -20,6 +20,14 @@ from app.api.v1.control import router as control_router
 from app.api.v1.sandbox import router as sandbox_router
 from app.api.v1.tunnels import router as tunnels_router
 from app.api.v1.pty import router as pty_router
+from app.api.v1.proxy import router as proxy_router
+from app.api.v1.kanban import router as kanban_router
+from app.api.v1.config import router as config_router
+from app.api.v1.ops import router as ops_router
+from app.api.v1.analytics import router as analytics_router
+from app.api.v1.mcp import router as mcp_router
+from app.api.v1.vault import router as vault_router
+from app.api.v1.messaging import router as messaging_router
 from jose import jwt, JWTError
 from app.services.warden.scheduler import start_scheduler, stop_scheduler
 from app.api.deps import get_current_user
@@ -60,7 +68,15 @@ app.include_router(warden_router, prefix="/api/v1/warden", tags=["warden"], depe
 app.include_router(control_router, prefix="/api/v1/control", tags=["control"], dependencies=auth_deps)
 app.include_router(sandbox_router, prefix="/api/v1/sandbox", tags=["sandbox"], dependencies=auth_deps)
 app.include_router(tunnels_router, prefix="/api/v1/tunnels", tags=["tunnels"], dependencies=auth_deps)
+app.include_router(kanban_router, prefix="/api/v1/kanban", tags=["kanban"], dependencies=auth_deps)
+app.include_router(config_router, prefix="/api/v1/config", tags=["config"], dependencies=auth_deps)
+app.include_router(ops_router, prefix="/api/v1/ops", tags=["ops"], dependencies=auth_deps)
+app.include_router(analytics_router, prefix="/api/v1/analytics", tags=["analytics"], dependencies=auth_deps)
+app.include_router(mcp_router, prefix="/api/v1/mcp", tags=["mcp"], dependencies=auth_deps)
+app.include_router(vault_router, prefix="/api/v1/vault", tags=["vault"], dependencies=auth_deps)
+app.include_router(messaging_router, prefix="/api/v1/messaging", tags=["messaging"], dependencies=auth_deps)
 app.include_router(pty_router, prefix="/api/pty", tags=["pty"])
+app.include_router(proxy_router, prefix="/api/proxy/hermes-dashboard", tags=["proxy"])
 
 # WebSocket Endpoint
 @app.websocket("/ws/telemetry")

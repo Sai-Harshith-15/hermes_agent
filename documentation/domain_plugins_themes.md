@@ -1,8 +1,6 @@
 # Domain: Theme & Plugin Systems
 
-> [!WARNING]
-> **[SPECIFICATION - PENDING IMPLEMENTATION]**
-> *This document is a technical specification for a feature that is NOT yet implemented in the codebase. It describes the target architecture.*
+
 
 ## Overview
 To provide a premium and customizable experience, the target Hermes Mission Control frontend will support dynamic theming and a plugin SDK for community extensions.

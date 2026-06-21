@@ -9,6 +9,14 @@ export const hermesApi = {
     const res = await fetch(`${BASE_URL}/sessions/?limit=${limit}`);
     return res.json();
   },
+  getMessages: async (sessionId: string) => {
+    const res = await fetch(`${BASE_URL}/sessions/${sessionId}/messages`);
+    return res.json();
+  },
+  getTasks: async () => {
+    const res = await fetch(`${BASE_URL}/kanban/tasks`);
+    return res.json();
+  },
   getSkills: async () => {
     const res = await fetch(`${BASE_URL}/skills/`);
     return res.json();
