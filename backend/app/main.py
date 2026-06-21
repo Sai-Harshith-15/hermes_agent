@@ -20,7 +20,6 @@ from app.api.v1.control import router as control_router
 from app.api.v1.sandbox import router as sandbox_router
 from app.api.v1.tunnels import router as tunnels_router
 from app.api.v1.pty import router as pty_router
-from app.api.v1.proxy import router as proxy_router
 from app.api.v1.kanban import router as kanban_router
 from app.api.v1.config import router as config_router
 from app.api.v1.ops import router as ops_router

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Terminal, MessageSquare, Folder, File as FileIcon, Save } from 'lucide-react';
+import { Terminal, MessageSquare, Folder, File as FileIcon, Save, Shield } from 'lucide-react';
 import { useDashboardStore } from '../../store/dashboardStore';
 import { sendAdminIntervention } from '../../lib/api/client';
 import { sandboxApi } from '../../lib/api/sandbox_api';
@@ -14,7 +14,7 @@ export function SandboxScreen() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState('');
 
-  const { data: files = [], refetch: refetchFiles } = useQuery({
+  const { data: files = [], refetch: refetchFiles, isError, error } = useQuery({
     queryKey: ['sandbox_files', currentPath],
     queryFn: () => sandboxApi.listFiles(currentPath)
   });
@@ -65,35 +65,47 @@ export function SandboxScreen() {
           <button className="text-gray-400 hover:text-emerald-500" onClick={() => refetchFiles()}>↺</button>
         </div>
         <div className="flex-1 overflow-y-auto p-2 text-sm text-gray-400 custom-scrollbar">
-          {currentPath !== '' && (
-            <div 
-              className="flex items-center space-x-2 p-1.5 hover:bg-gray-800 rounded cursor-pointer"
-              onClick={() => {
-                const parts = currentPath.split('/');
-                parts.pop();
-                setCurrentPath(parts.join('/'));
-              }}
-            >
-              <Folder size={14} className="text-emerald-500"/>
-              <span>..</span>
+          {isError ? (
+            <div className="p-4 text-center text-red-400 border border-red-900/50 bg-red-900/10 rounded-lg mx-2 mt-2 flex flex-col items-center">
+              <Shield size={24} className="mb-2 opacity-70" />
+              <p className="font-semibold text-xs mb-1">Sandbox Offline</p>
+              <p className="text-[10px] leading-relaxed opacity-80">
+                Connection to the local Docker socket failed. Ensure Docker is running and the Hermes agent container has volume mounting permissions for `/var/run/docker.sock`.
+              </p>
             </div>
+          ) : (
+            <>
+              {currentPath !== '' && (
+                <div 
+                  className="flex items-center space-x-2 p-1.5 hover:bg-gray-800 rounded cursor-pointer"
+                  onClick={() => {
+                    const parts = currentPath.split('/');
+                    parts.pop();
+                    setCurrentPath(parts.join('/'));
+                  }}
+                >
+                  <Folder size={14} className="text-emerald-500"/>
+                  <span>..</span>
+                </div>
+              )}
+              {files.map((file: any) => (
+                <div 
+                  key={file.path}
+                  className={`flex items-center space-x-2 p-1.5 hover:bg-gray-800 rounded cursor-pointer ${selectedFile === file.path ? 'bg-gray-800 text-emerald-400' : ''}`}
+                  onClick={() => {
+                    if (file.is_dir) {
+                      setCurrentPath(file.path);
+                    } else {
+                      handleSelectFile(file.path);
+                    }
+                  }}
+                >
+                  {file.is_dir ? <Folder size={14} className="text-emerald-500"/> : <FileIcon size={14}/>}
+                  <span className="truncate">{file.name}</span>
+                </div>
+              ))}
+            </>
           )}
-          {files.map((file: any) => (
-            <div 
-              key={file.path}
-              className={`flex items-center space-x-2 p-1.5 hover:bg-gray-800 rounded cursor-pointer ${selectedFile === file.path ? 'bg-gray-800 text-emerald-400' : ''}`}
-              onClick={() => {
-                if (file.is_dir) {
-                  setCurrentPath(file.path);
-                } else {
-                  handleSelectFile(file.path);
-                }
-              }}
-            >
-              {file.is_dir ? <Folder size={14} className="text-emerald-500"/> : <FileIcon size={14}/>}
-              <span className="truncate">{file.name}</span>
-            </div>
-          ))}
         </div>
       </div>
 
