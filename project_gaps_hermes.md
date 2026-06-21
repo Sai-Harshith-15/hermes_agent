@@ -21,7 +21,8 @@
 
     These are things the actual hermes dashboard provides that your HMC manual doesn't mention at all:
 
-    1. Embedded Chat / Terminal (BIGGEST GAP)
+    ✅ 1. Embedded Chat / Terminal (BIGGEST GAP)
+    (IMPLEMENTED)
 
     The real dashboard runs the full Hermes TUI inside the browser via a PTY WebSocket (/api/pty). You can type messages, see tool calls stream in, use slash commands — everything you can do in the terminal. Your HMC has no way to actually talk to Hermes from the browser.
 
@@ -31,55 +32,68 @@
 
     Real code path: web/src/ uses xterm.js with WebGL renderer, server spawns the TUI behind a POSIX pseudo-terminal, keystrokes flow one direction, ANSI output streams back.
 
-    2. Theme System
+    ✅ 2. Theme System
+    (IMPLEMENTED)
 
     7 built-in themes (Hermes Teal, Midnight, Ember, Mono, Cyberpunk, Rosé) + custom YAML themes in ~/.hermes/dashboard-themes/. 3-layer palette (background/midground/foreground), typography stack, layout density/radius, component chrome overrides, custom CSS — all hot-swappable from a palette icon in the header.
 
-    3. Plugin System
+    ✅ 3. Plugin System
+    (IMPLEMENTED)
 
     Plugins live in ~/.hermes/plugins/<name>/dashboard/ with a manifest.json + JS bundle + optional Python backend. Can add tabs, replace built-in pages, inject into shell slots (sidebar, header). Uses a Plugin SDK on window.__HERMES_PLUGIN_SDK__ so plugins don't bundle React.
 
-    4. MCP Server Management
+    ✅ 4. MCP Server Management
+    (IMPLEMENTED)
 
     Full CRUD for MCP servers (stdio + HTTP/SSE), enable/disable toggle, test connection against live server, catalog browser to install approved servers with one click. The real catalog lives at optional-mcps/ in the Hermes repo.
 
-    5. Messaging Channels Setup UI
+    ✅ 5. Messaging Channels Setup UI
+    (IMPLEMENTED)
 
     Every platform (Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Mattermost, Email, SMS, BlueBubbles, DingTalk, Feishu, WeCom, etc.) with per-platform setup forms, enable/disable toggles, test connection, and a "restart gateway" button. Your manual doesn't mention this at all.
 
-    6. Pairing Management
+    ✅ 6. Pairing Management
+    (IMPLEMENTED)
 
     Approve/revoke pending messaging users. The real gateway uses a pairing code system — users send a code on Telegram/Discord/etc. and the admin approves from the dashboard.
 
-    7. Skills Hub Browsing + Install
+    ✅ 7. Skills Hub Browsing + Install
+    (IMPLEMENTED)
 
     Search the skill hub (all sources), install by ID with live log output, update all button. The real system uses ~/.hermes/skills/ on disk and a hub registry.
 
-    8. Webhook Subscription Management
+    ✅ 8. Webhook Subscription Management
+    (IMPLEMENTED)
 
     Create/enable/disable webhook routes with event filter, delivery target, direct-delivery mode. On creation it shows the route URL + one-time HMAC secret.
 
-    9. Credential Pool UI (not just .env keys)
+    ✅ 9. Credential Pool UI (not just .env keys)
+    (IMPLEMENTED)
 
     Per-provider rotating API key pools. Add/remove keys for OpenRouter, Anthropic, etc. Keys are round-robinned. Your manual mentions "5× OpenCode + 3× OpenRouter" as a fixed scheme, but real Hermes pools per-provider dynamically.
 
-    10. System Operations
+    ✅ 10. System Operations
+    (IMPLEMENTED)
 
     Doctor check, security audit, create/restore backup, update skills, prompt-size breakdown, support dump generation, config migration — all with live log streaming into the page.
 
-    11. Analytics
+    ✅ 11. Analytics
+    (IMPLEMENTED)
 
     Token usage chart (stacked daily bar), cost breakdown, per-model breakdown. Computed from session history. Your manual has no analytics.
 
-    12. Shell Hooks Management
+    ✅ 12. Shell Hooks Management
+    (IMPLEMENTED)
 
     Create/remove shell hooks (event + command + matcher + timeout) with consent-gated security. The real system stores them in ~/.hermes/shell-hooks-allowlist.json.
 
-    13. Checkpoints Management
+    ✅ 13. Checkpoints Management
+    (IMPLEMENTED)
 
     View and prune the /rollback filesystem checkpoint store.
 
-    14. Skill Curator Status
+    ✅ 14. Skill Curator Status
+    (IMPLEMENTED)
 
     Pause/resume/view the background skill maintenance system.
 

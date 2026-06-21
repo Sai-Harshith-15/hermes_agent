@@ -13,6 +13,8 @@ import {
   TunnelsScreen, SettingsScreen, ChannelsScreen, WebhooksScreen, MCPScreen, 
   PluginsScreen, SkillsScreen, ModelsScreen, ThemesScreen
 } from './features/misc/MiscScreens';
+import { CheckpointsScreen } from './features/misc/CheckpointsScreen';
+import { ShellHooksScreen } from './features/misc/ShellHooksScreen';
 
 export function AppRoutes() {
   return (
@@ -39,6 +41,8 @@ export function AppRoutes() {
       <Route path="/webhooks" element={<WebhooksScreen />} />
       <Route path="/themes" element={<ThemesScreen />} />
       <Route path="/settings" element={<SettingsScreen />} />
+      <Route path="/checkpoints" element={<CheckpointsScreen />} />
+      <Route path="/hooks" element={<ShellHooksScreen />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );

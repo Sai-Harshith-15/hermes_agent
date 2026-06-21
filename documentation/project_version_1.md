@@ -31,3 +31,8 @@ To achieve a true 1:1 parity with the actual Hermes systems, the following roadm
 10. ✅ **Theme System:** A theme picker bridging the frontend to `~/.hermes/dashboard-themes/` configurations.
 11. ✅ **Webhook Management:** Interfaces to create, enable, and disable webhook routes.
 12. ✅ **Pairing Management:** Approve/revoke external messaging users directly from the browser.
+
+### Phase 4 — Production Pre-Flight & Docker Resilience
+34. ✅ **Docker Stability:** Integrated `procps` for `pkill` signaling, ensuring restart endpoints don't crash in standard lightweight Python containers.
+35. ✅ **Database Synchronization:** Native async connection bindings (`sqlite+aiosqlite://`) and specific table mapping (`model_usage`, `pairing_requests`) added, along with multithreading flags (`check_same_thread=False`) to prevent `database is locked` concurrency errors.
+36. ✅ **Robust Config Injection:** Zero-downtime YAML handling using defensive `.setdefault()` strategies for `config.yaml` injection, explicitly averting `KeyError` crashes when building initial key arrays.

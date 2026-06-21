@@ -22,5 +22,7 @@ As detailed in the `project_version_1.md` roadmap, the project has successfully 
 - **Phase 1 (Core)**: *Completed*. The PTY terminal (`@xterm/xterm`), single-port backend architecture, Reverse Proxy, FTS5 Sessions view, Kanban boards, Profile Manager, and Monaco Config Editors have been fully implemented.
 - **Phase 2 (Important)**: *Completed*. MCP Servers and Skills management hubs are fully functional, wiring into `~/.hermes/config.yaml` and `.env` pools.
 - **Phase 3 (Polish)**: *Completed*. Analytics queries token metrics, dynamic Themes parse from `~/.hermes/dashboard-themes/`, and Webhooks logic handles HMAC generation.
+- **Production Pre-Flight & Docker Resilience**: *Completed*. System-level dependencies (`procps`) are integrated into the Dockerfile for graceful process management. SQLite concurrency uses `sqlite+aiosqlite` with appropriate threading flags to prevent locking, and SQLModel tables are explicitly bound (e.g., `model_usage`, `pairing_requests`) matching authentic Hermes schemas exactly.
+- **Sprint 10 (Power-User Expansion)**: *Completed*. The final 4 advanced gaps are closed. Integrated OS-Agnostic Checkpoint Management (`~/.hermes/rollback/`), Advanced Shell Hooks config, Skill Curator polling daemon controls, and the `PluginLoader` SDK for dynamic third-party bundle injection.
 
 *(To view active real-time status of agent tasks, see the Active Agents widget in the frontend dashboard).*

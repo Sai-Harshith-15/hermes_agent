@@ -28,6 +28,11 @@ from app.api.v1.analytics import router as analytics_router
 from app.api.v1.mcp import router as mcp_router
 from app.api.v1.vault import router as vault_router
 from app.api.v1.messaging import router as messaging_router
+from app.api.v1.checkpoints import router as checkpoints_router
+from app.api.v1.hooks import router as hooks_router
+from app.api.v1.curator import router as curator_router
+from app.api.v1.plugins import router as plugins_router
+import mimetypes
 from jose import jwt, JWTError
 from app.services.warden.scheduler import start_scheduler, stop_scheduler
 from app.api.deps import get_current_user
@@ -75,6 +80,10 @@ app.include_router(analytics_router, prefix="/api/v1/analytics", tags=["analytic
 app.include_router(mcp_router, prefix="/api/v1/mcp", tags=["mcp"], dependencies=auth_deps)
 app.include_router(vault_router, prefix="/api/v1/vault", tags=["vault"], dependencies=auth_deps)
 app.include_router(messaging_router, prefix="/api/v1/messaging", tags=["messaging"], dependencies=auth_deps)
+app.include_router(checkpoints_router, prefix="/api/v1/ops/checkpoints", tags=["checkpoints"], dependencies=auth_deps)
+app.include_router(hooks_router, prefix="/api/v1/ops/hooks", tags=["hooks"], dependencies=auth_deps)
+app.include_router(curator_router, prefix="/api/v1/skills/curator", tags=["curator"], dependencies=auth_deps)
+app.include_router(plugins_router, prefix="/api/v1/plugins", tags=["plugins"], dependencies=auth_deps)
 app.include_router(pty_router, prefix="/api/pty", tags=["pty"])
 app.include_router(proxy_router, prefix="/api/proxy/hermes-dashboard", tags=["proxy"])
 
@@ -99,6 +108,15 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
         manager.disconnect(websocket)
 
 import os
+
+# Initialize mimetypes for JS
+mimetypes.add_type('application/javascript', '.js')
+
+# Mount Plugin static files
+plugins_dir = os.path.expanduser("~/.hermes/plugins")
+os.makedirs(plugins_dir, exist_ok=True)
+app.mount("/api/plugins-static", StaticFiles(directory=plugins_dir), name="plugins")
+
 # Mount React static files
 frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend", "dist")
 if os.path.exists(frontend_dist):

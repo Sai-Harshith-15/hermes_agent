@@ -9,7 +9,7 @@ import { useDashboardStore } from '../../store/dashboardStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hermesApi } from '../../lib/api/hermes_api';
 import { controlApi } from '../../lib/api/control_api';
-import { getConfigYaml, updateConfigYaml, getEnv, updateEnv, runOp } from '../../lib/api/client';
+import { fetchApi, getConfigYaml, updateConfigYaml, getEnv, updateEnv, runOp } from '../../lib/api/client';
 import Editor from '@monaco-editor/react';
 
 export function VaultScreen() {
@@ -1179,9 +1179,47 @@ export function SkillsScreen() {
     queryFn: hermesApi.getSkills
   });
 
+  const [curatorStatus, setCuratorStatus] = useState<string>('unknown');
+
+  const loadCuratorStatus = async () => {
+    try {
+      const data = await fetchApi('/skills/curator');
+      setCuratorStatus(data.status);
+    } catch(err) {}
+  };
+
+  useEffect(() => {
+    loadCuratorStatus();
+  }, []);
+
+  const toggleCurator = async () => {
+    const action = curatorStatus === 'running' ? 'pause' : 'resume';
+    try {
+      await fetchApi(`/skills/curator/toggle?action=${action}`, { method: 'POST' });
+      await loadCuratorStatus();
+    } catch(err: any) {
+      alert(`Failed to toggle curator: ${err.message}`);
+    }
+  };
+
   return (
     <div className="max-w-4xl space-y-6">
-      <div><h2 className="text-2xl font-bold text-white">Learned Skills</h2></div>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center">Learned Skills & Curator</h2>
+          <p className="text-sm text-gray-400">Background agent that autonomously refactors and deduplicates skills.</p>
+        </div>
+        <div className="flex items-center space-x-3 bg-gray-900 border border-gray-800 px-4 py-2 rounded-xl">
+          <span className="text-sm text-gray-400">Curator Daemon</span>
+          <button 
+            onClick={toggleCurator}
+            className={`w-12 h-6 rounded-full relative transition-colors ${curatorStatus === 'running' ? 'bg-emerald-500' : 'bg-gray-600'}`}
+          >
+            <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${curatorStatus === 'running' ? 'left-7' : 'left-1'}`}></div>
+          </button>
+          <span className={`text-xs font-mono uppercase ${curatorStatus === 'running' ? 'text-emerald-400' : 'text-gray-500'}`}>{curatorStatus}</span>
+        </div>
+      </div>
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm space-y-4">
         {isLoading ? <div className="text-gray-400">Loading skills...</div> : 
           skills.length === 0 ? <div className="text-gray-500">No skills found in ~/.hermes/skills</div> :

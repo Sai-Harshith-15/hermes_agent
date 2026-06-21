@@ -11,6 +11,7 @@ import {
 import { WS_BASE_URL, fetchDashboardState } from './lib/api/client';
 import { useDashboardStore } from './store/dashboardStore';
 import { AppRoutes } from './routes';
+import { PluginLoader } from './features/misc/PluginLoader';
 import { login as apiLogin, fetchMe } from './lib/api/auth';
 
 export default function AgentCommandCenter() {
@@ -134,6 +135,7 @@ export default function AgentCommandCenter() {
             <NavItem id="terminal" icon={Terminal} label="Hermes TUI" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="warden" icon={ShieldAlert} label="Warden Overseer" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="tunnels" icon={Globe} label="Tunnels & Deploy" current={currentScreen} set={(id) => navigate(`/${id}`)} />
+            <NavItem id="checkpoints" icon={Database} label="System Rollbacks" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="channels" icon={Tv} label="Output Channels" current={currentScreen} set={(id) => navigate(`/${id}`)} />
           </NavSection>
 
@@ -154,6 +156,7 @@ export default function AgentCommandCenter() {
           <NavSection title="Infrastructure">
             <NavItem id="models" icon={Box} label="Models (Ollama/Lite)" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="vault" icon={Key} label="API Vault (LiteLLM)" current={currentScreen} set={(id) => navigate(`/${id}`)} />
+            <NavItem id="hooks" icon={Terminal} label="Shell Hooks" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="mcps" icon={Shield} label="MCP Snitch Security" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="webhooks" icon={Link} label="Webhooks" current={currentScreen} set={(id) => navigate(`/${id}`)} />
             <NavItem id="themes" icon={Puzzle} label="Dashboard Themes" current={currentScreen} set={(id) => navigate(`/${id}`)} />
@@ -172,6 +175,7 @@ export default function AgentCommandCenter() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-full overflow-hidden bg-gray-950 relative">
         <TopBar currentScreen={currentScreen} wsConnected={wsConnected} />
+        <PluginLoader />
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
           <AppRoutes />
         </div>
