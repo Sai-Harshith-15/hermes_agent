@@ -8,11 +8,20 @@ import { TerminalScreen } from './features/terminal/TerminalScreen';
 import { KanbanScreen } from './features/kanban/KanbanScreen';
 import { SandboxScreen } from './features/sandbox/SandboxScreen';
 import { WardenScreen } from './features/warden/WardenScreen';
-import { 
-  VaultScreen, ProfilesScreen, ObsidianScreen, SessionsScreen, ChatScreen, 
-  TunnelsScreen, SettingsScreen, ChannelsScreen, WebhooksScreen, MCPScreen, 
-  PluginsScreen, SkillsScreen, ModelsScreen, ThemesScreen
-} from './features/misc/MiscScreens';
+import { VaultScreen } from './features/vault/VaultScreen';
+import { ProfilesScreen } from './features/profiles/ProfilesScreen';
+import { ObsidianScreen } from './features/memory/ObsidianScreen';
+import { SessionsScreen } from './features/sessions/SessionsScreen';
+import { ChatScreen } from './features/chat/ChatScreen';
+import { TunnelsScreen } from './features/tunnels/TunnelsScreen';
+import { SettingsScreen } from './features/settings/SettingsScreen';
+import { ChannelsScreen } from './features/channels/ChannelsScreen';
+import { WebhooksScreen } from './features/webhooks/WebhooksScreen';
+import { MCPScreen } from './features/mcp/MCPScreen';
+import { PluginsScreen } from './features/plugins/PluginsScreen';
+import { SkillsScreen } from './features/skills/SkillsScreen';
+import { ModelsScreen } from './features/models/ModelsScreen';
+import { ThemesScreen } from './features/themes/ThemesScreen';
 import { CheckpointsScreen } from './features/misc/CheckpointsScreen';
 import { ShellHooksScreen } from './features/misc/ShellHooksScreen';
 

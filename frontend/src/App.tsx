@@ -13,6 +13,10 @@ import { useDashboardStore } from './store/dashboardStore';
 import { AppRoutes } from './routes';
 import { PluginLoader } from './features/misc/PluginLoader';
 import { login as apiLogin, fetchMe } from './lib/api/auth';
+import { LoginScreen } from './features/auth/LoginScreen';
+import { NavSection } from './components/layout/NavSection';
+import { NavItem } from './components/layout/NavItem';
+import { TopBar } from './components/layout/TopBar';
 
 export default function AgentCommandCenter() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -190,106 +194,4 @@ export default function AgentCommandCenter() {
   );
 }
 
-// --- UTILITY COMPONENTS ---
 
-function NavSection({ title, children }: { title: string, children: React.ReactNode }) {
-  return (
-    <div className="mb-6">
-      <h3 className="px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{title}</h3>
-      <div className="space-y-1">{children}</div>
-    </div>
-  );
-}
-
-interface NavItemProps {
-  id: string;
-  icon: any;
-  label: string;
-  current: string;
-  set: (id: string) => void;
-}
-
-function NavItem({ id, icon: Icon, label, current, set }: NavItemProps) {
-  const isActive = current === id;
-  return (
-    <button
-      onClick={() => set(id)}
-      className={`w-full flex items-center space-x-3 px-5 py-2.5 text-sm transition-colors ${
-        isActive ? 'bg-emerald-500/10 text-emerald-400 border-r-2 border-emerald-500' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
-      }`}
-    >
-      <Icon size={18} />
-      <span>{label}</span>
-    </button>
-  );
-}
-
-function TopBar({ currentScreen, wsConnected }: { currentScreen: string, wsConnected: boolean }) {
-  return (
-    <header className="h-14 border-b border-gray-800 flex items-center justify-between px-6 bg-gray-900/50 backdrop-blur shrink-0">
-      <div className="flex items-center text-sm">
-        <span className="text-gray-500">Hermes Environment</span>
-        <ChevronRight size={14} className="mx-2 text-gray-600" />
-        <span className="text-gray-200 font-medium capitalize">{currentScreen.replace('_', ' ')}</span>
-      </div>
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2 text-xs bg-gray-800 px-3 py-1.5 rounded-full border border-gray-700">
-          <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
-          <span className="text-gray-300">Telemetry Feed: <span className={wsConnected ? 'text-emerald-400 font-mono' : 'text-red-400 font-mono'}>{wsConnected ? 'Connected' : 'Offline'}</span></span>
-        </div>
-        <div className="w-8 h-8 bg-gradient-to-tr from-emerald-500 to-cyan-500 rounded-full border border-gray-700 shadow flex items-center justify-center text-xs font-bold text-white">
-          OP
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function LoginScreen({ onLogin }: { onLogin: () => void }) {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await apiLogin(username, password);
-      onLogin();
-    } catch (err) {
-      setError('Invalid credentials');
-    }
-  };
-
-  return (
-    <div className="h-screen w-full flex items-center justify-center bg-gray-950 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)]"></div>
-      
-      <div className="z-10 w-full max-w-md bg-gray-900 border border-gray-800 rounded-xl shadow-2xl p-8 backdrop-blur-sm">
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400">
-            <Network size={32} />
-          </div>
-        </div>
-        <h2 className="text-2xl font-bold text-center text-white mb-2">Hermes Pulse</h2>
-        <p className="text-sm text-center text-gray-400 mb-8">Secure multi-tenant orchestration gateway.</p>
-        
-        {error && <div className="text-red-500 text-sm text-center mb-4">{error}</div>}
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">USERNAME</label>
-            <input type="text" value={username} onChange={e => setUsername(e.target.value)} required className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">PASSWORD</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono" />
-          </div>
-          <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center space-x-2">
-            <span>Establish Connection</span>
-            <ChevronRight size={18} />
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
