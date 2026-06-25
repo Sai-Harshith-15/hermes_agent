@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Plus } from 'lucide-react';
-import { fetchApi } from '../../lib/api/client';
+import { Settings, Plus, Eye, RefreshCw } from 'lucide-react';
+import { vaultApi } from '../../lib/api/vault_api';
+import { toast } from 'sonner';
 
 export function VaultScreen() {
   const [showAddKey, setShowAddKey] = useState(false);
   const [newKeyForm, setNewKeyForm] = useState({ provider: '', model_name: '', api_key_masked: '', rpm_limit: 60 });
-
   const [vaultKeys, setVaultKeys] = useState<any[]>([]);
 
   const fetchVault = async () => {
@@ -27,15 +27,34 @@ export function VaultScreen() {
   const handleAddKey = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetchApi('/vault/add', {
-        method: 'POST',
-        body: JSON.stringify({ provider: newKeyForm.provider, key: newKeyForm.api_key_masked })
-      });
+      await vaultApi.addKey(newKeyForm.provider, newKeyForm.api_key_masked);
       setNewKeyForm({ provider: '', model_name: '', api_key_masked: '', rpm_limit: 60 });
       setShowAddKey(false);
+      toast.success("New API key registered successfully");
       fetchVault();
     } catch (err) {
+      toast.error(`Error saving API key: ${err}`);
       console.error("Error saving API key:", err);
+    }
+  };
+
+  const handleReveal = async (keyId: string) => {
+    if (keyId === "None" || keyId === "unknown") return;
+    try {
+      const data = await vaultApi.revealKey(keyId);
+      toast.success(`Secret Key Revealed: ${data.key}`, { duration: 10000 });
+    } catch (err) {
+      toast.error(`Failed to reveal key: ${err}`);
+    }
+  };
+
+  const handleRotate = async (keyId: string) => {
+    if (keyId === "None" || keyId === "unknown") return;
+    try {
+      const data = await vaultApi.rotateKey(keyId);
+      toast.success(data.message);
+    } catch (err) {
+      toast.error(`Failed to rotate key: ${err}`);
     }
   };
 
@@ -84,7 +103,7 @@ export function VaultScreen() {
             </div>
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1">API KEY (MASKED)</label>
+            <label className="block text-xs text-gray-400 mb-1">API KEY (RAW)</label>
             <input 
               type="text" 
               required 
@@ -138,7 +157,7 @@ export function VaultScreen() {
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span>{Math.round(key.current_usage_pct || 0)}%</span>
-                      <span>{key.rpm_limit} max</span>
+                      <span>{key.rpm_limit || 60} max</span>
                     </div>
                     <div className="w-full bg-gray-800 rounded-full h-1.5">
                       <div className={`h-1.5 rounded-full ${(key.current_usage_pct || 0) > 75 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${key.current_usage_pct || 0}%` }}></div>
@@ -150,14 +169,36 @@ export function VaultScreen() {
                       key.status === 'Rate-Limited' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 
                       'bg-amber-500/10 text-amber-400 border-amber-500/20'
                     }`}>
-                      {key.status}
+                      {key.status || 'Active'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-gray-500 hover:text-gray-300 p-1"><Settings size={16}/></button>
+                    <div className="flex items-center justify-end space-x-2">
+                      <button 
+                        onClick={() => handleReveal(key.key_id)}
+                        className="text-gray-400 hover:text-blue-400 p-1 transition-colors"
+                        title="Reveal Key"
+                      >
+                        <Eye size={16}/>
+                      </button>
+                      <button 
+                        onClick={() => handleRotate(key.key_id)}
+                        className="text-gray-400 hover:text-amber-400 p-1 transition-colors"
+                        title="Rotate Key"
+                      >
+                        <RefreshCw size={16}/>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
+              {keysToDisplay.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    No keys found in vault
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -165,4 +206,3 @@ export function VaultScreen() {
     </div>
   );
 }
-

@@ -29,6 +29,15 @@ async def override_get_db():
 
 app.dependency_overrides[get_db] = override_get_db
 
+from app.api.deps import get_current_user
+async def override_get_current_user():
+    return User(
+        username="testadmin",
+        hashed_password="fake",
+        role="owner"
+    )
+app.dependency_overrides[get_current_user] = override_get_current_user
+
 @pytest_asyncio.fixture(scope="function", autouse=True)
 async def init_test_db():
     async with engine.begin() as conn:

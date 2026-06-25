@@ -19,23 +19,64 @@ class HermesStateAdapter:
                 return [dict(row) for row in rows]
 
     async def get_recent_sessions(self, limit: int = 50) -> List[Dict[str, Any]]:
-        query = "SELECT * FROM sessions ORDER BY created_at DESC LIMIT ?"
+        query = "SELECT * FROM agent_runs ORDER BY start_time DESC LIMIT ?"
         try:
             return await self._execute_query(query, (limit,))
         except Exception:
             return []
 
-    async def get_recent_tasks(self, limit: int = 50) -> List[Dict[str, Any]]:
-        query = "SELECT * FROM tasks ORDER BY updated_at DESC LIMIT ?"
+    async def get_session_detail(self, run_id: str) -> Dict[str, Any]:
+        query = "SELECT * FROM agent_runs WHERE id = ?"
         try:
-            return await self._execute_query(query, (limit,))
+            res = await self._execute_query(query, (run_id,))
+            return res[0] if res else {}
+        except Exception:
+            return {}
+
+    async def search_sessions(self, search_query: str, limit: int = 50) -> List[Dict[str, Any]]:
+        query = """
+        SELECT DISTINCT ar.*
+        FROM agent_runs ar
+        LEFT JOIN agent_logs al ON ar.id = al.run_id
+        LEFT JOIN tasks t ON ar.id = t.run_id
+        LEFT JOIN agent_messages am ON t.id = am.task_id
+        WHERE am.content LIKE ? OR al.message LIKE ?
+        ORDER BY ar.start_time DESC LIMIT ?
+        """
+        try:
+            like_q = f"%{search_query}%"
+            return await self._execute_query(query, (like_q, like_q, limit))
         except Exception:
             return []
 
-    async def get_messages(self, session_id: str, limit: int = 100) -> List[Dict[str, Any]]:
-        query = "SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC LIMIT ?"
+    async def get_messages(self, run_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+        query = """
+        SELECT timestamp, role, content, tool_name, token_cost FROM (
+            SELECT
+                am.ts as timestamp,
+                CASE WHEN am.from_agent = 'user' THEN 'user' ELSE 'assistant' END as role,
+                am.content,
+                NULL as tool_name,
+                NULL as token_cost
+            FROM agent_messages am
+            JOIN tasks t ON am.task_id = t.id
+            WHERE t.run_id = ?
+            
+            UNION ALL
+            
+            SELECT
+                timestamp,
+                'tool' as role,
+                message as content,
+                tool_name,
+                token_cost
+            FROM agent_logs
+            WHERE run_id = ? AND tool_name IS NOT NULL
+        )
+        ORDER BY timestamp ASC LIMIT ?
+        """
         try:
-            return await self._execute_query(query, (session_id, limit))
+            return await self._execute_query(query, (run_id, run_id, limit))
         except Exception:
             return []
 

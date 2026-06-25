@@ -16,6 +16,12 @@ class SteerAgentRequest(BaseModel):
 class PauseAgentRequest(BaseModel):
     agent_name: str
 
+class ResumeAgentRequest(BaseModel):
+    agent_name: str
+
+class KillAgentRequest(BaseModel):
+    agent_name: str
+
 @router.post("/inject-task")
 def inject_task(req: InjectTaskRequest):
     intent = adapter.inject_task(req.task_spec, req.priority)
@@ -29,4 +35,14 @@ def steer_agent(req: SteerAgentRequest):
 @router.post("/pause-agent")
 def pause_agent(req: PauseAgentRequest):
     intent = adapter.pause_agent(req.agent_name)
+    return {"status": "success", "intent": intent}
+
+@router.post("/resume-agent")
+def resume_agent(req: ResumeAgentRequest):
+    intent = adapter.resume_agent(req.agent_name)
+    return {"status": "success", "intent": intent}
+
+@router.post("/kill-agent")
+def kill_agent(req: KillAgentRequest):
+    intent = adapter.kill_agent(req.agent_name)
     return {"status": "success", "intent": intent}

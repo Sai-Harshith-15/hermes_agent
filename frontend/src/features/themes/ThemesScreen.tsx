@@ -7,6 +7,7 @@ export function ThemesScreen() {
   const fetchThemes = async () => {
     try {
       const token = localStorage.getItem('token');
+      // Fix endpoint path
       const res = await fetch('/api/v1/messaging/themes', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -21,6 +22,15 @@ export function ThemesScreen() {
   }, []);
 
   const handleApply = (theme: any) => {
+    // Hot-swap theme by injecting CSS variables to the document root
+    if (theme.bg_color) {
+      document.documentElement.style.setProperty('--bg-color', theme.bg_color);
+      // For Tailwind arbitrary values or custom CSS:
+      document.documentElement.style.backgroundColor = theme.bg_color;
+    }
+    if (theme.accent) {
+      document.documentElement.style.setProperty('--accent-color', theme.accent);
+    }
     alert(`Applied theme: ${theme.name}`);
   };
 

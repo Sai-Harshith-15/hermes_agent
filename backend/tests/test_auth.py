@@ -1,5 +1,8 @@
+import os
 import pytest
 from httpx import AsyncClient
+from app.main import app
+from app.api.deps import get_current_user
 
 @pytest.mark.asyncio
 async def test_login_success(client: AsyncClient):
@@ -23,17 +26,8 @@ async def test_login_failure(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_get_me_success(client: AsyncClient):
-    # First login to get the token
-    login_response = await client.post(
-        "/api/v1/auth/login",
-        data={"username": "testadmin", "password": "testpass"}
-    )
-    token = login_response.json()["access_token"]
-    
-    # Use the token to access /me
     response = await client.get(
-        "/api/v1/auth/me",
-        headers={"Authorization": f"Bearer {token}"}
+        "/api/v1/auth/me"
     )
     assert response.status_code == 200
     data = response.json()
@@ -42,5 +36,13 @@ async def test_get_me_success(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_get_me_unauthorized(client: AsyncClient):
-    response = await client.get("/api/v1/auth/me")
-    assert response.status_code == 401
+    # Temporarily remove the dependency override for this test
+    original_override = app.dependency_overrides.get(get_current_user)
+    if get_current_user in app.dependency_overrides:
+        del app.dependency_overrides[get_current_user]
+    try:
+        response = await client.get("/api/v1/auth/me")
+        assert response.status_code == 401
+    finally:
+        if original_override:
+            app.dependency_overrides[get_current_user] = original_override

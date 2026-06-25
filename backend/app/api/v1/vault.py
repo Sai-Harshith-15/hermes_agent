@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Dict, Any, List
 import os
 from pathlib import Path
-from dotenv import set_key
+from dotenv import set_key, get_key
 from app.services.hermes.config_adapter import HermesConfigAdapter
 from ruamel.yaml import YAML
 
@@ -93,3 +93,27 @@ def add_vault_key(req: VaultAddRequest):
         return {"status": "success", "key_id": env_var_name}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class VaultRevealRequest(BaseModel):
+    key_id: str
+
+@router.post("/reveal")
+def reveal_vault_key(req: VaultRevealRequest):
+    env_path = adapter.hermes_dir / ".env"
+    if not env_path.exists():
+        raise HTTPException(status_code=404, detail="Vault env file not found")
+        
+    val = get_key(str(env_path), req.key_id)
+    if not val:
+        raise HTTPException(status_code=404, detail="Key not found")
+        
+    # In a real system, you'd add an audit log entry here
+    return {"status": "success", "key": val}
+
+class VaultRotateRequest(BaseModel):
+    key_id: str
+
+@router.post("/rotate")
+def rotate_vault_key(req: VaultRotateRequest):
+    # For now, just return success. Actual rotation logic will be built in Warden Phase 8
+    return {"status": "success", "message": f"Rotation requested for {req.key_id}"}

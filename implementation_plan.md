@@ -20,27 +20,16 @@ After auditing the codebase against [claude_implementation_plan.md](file:///d:/G
 ## User Review Required
 
 > [!IMPORTANT]
-> **Decision 1 — Custom Extensions vs. Stock Hermes:** The `claude_implementation_plan.md` proposes custom concepts (Warden self-healing, soul.md/taste.md, Layer hierarchy). The `project_gaps_hermes.md` confirms these don't exist in Hermes. Do you want to:
-> - **(A)** Build them as custom HMC-only extensions (more work, more power)
-> - **(B)** Drop them and achieve 1:1 parity with stock Hermes dashboard features first, then add custom extensions later
-> - **(C)** Build stock Hermes parity FIRST (Phases 1–6 below), then layer custom extensions (Phases 7–10)
->
-> **This plan assumes option (C)** — stock parity first, custom extensions after.
+> **Decision 1 — Custom Extensions vs. Stock Hermes:** 
+> Go with (C) - Parity first. The foundation (Phases 1-6) must be rock solid before you try to build the custom Warden. If the base UI is shaky, real-time interception will fail.
 
 > [!IMPORTANT]
-> **Decision 2 — Control Plane Mechanism:** The `control_adapter.py` currently writes JSON intent files to `~/.hermes/control/inbox/` — but Hermes has no consumer for this directory. The real Hermes control path is through its CLI (`hermes` commands) or the PTY terminal. Do you want to:
-> - **(A)** Use the embedded PTY as the primary control channel (type commands directly)
-> - **(B)** Build a custom file-based dropbox AND add a cron/watcher on the Hermes side to consume it
-> - **(C)** Use `hermes` CLI subprocess calls from the backend for control actions
->
-> **This plan assumes (A) for interactive control and (C) for programmatic actions.**
+> **Decision 2 — Control Plane Mechanism:** 
+> Go with a Hybrid. Use the Embedded PTY for raw terminal access, but use CLI subprocesses / WebSockets for the programmatic "Pause" and "Steer" buttons. Scraping raw PTY text for control logic is highly error-prone.
 
 > [!WARNING]
-> **Decision 3 — Database Strategy:** The `claude_implementation_plan.md` proposed PostgreSQL. The `project_gaps_hermes.md` correctly says Hermes uses SQLite for everything. The current codebase has a `hermes_monitor.db` SQLite for HMC's own data + reads Hermes's `hermes_state.db` and `kanban.db`. Should we:
-> - **(A)** Stay 100% SQLite (recommended, aligns with Hermes, zero extra infrastructure)
-> - **(B)** Add PostgreSQL later for HMC's own aggregated data only
->
-> **This plan assumes (A).**
+> **Decision 3 — Database Strategy:** 
+> Go with (A) - Stay 100% SQLite. Moving to PostgreSQL adds unnecessary network latency and points of failure. SQLite (with WAL mode enabled) is incredibly fast, native to Hermes, and perfect for a localized, highly responsive Mission Control.
 
 ---
 
@@ -161,6 +150,9 @@ After auditing the codebase against [claude_implementation_plan.md](file:///d:/G
 
 #### Backend
 
+##### [NEW REQUIREMENT] Database Concurrency
+- Ensure the SQLite connection adapter executes `PRAGMA journal_mode=WAL;` (Write-Ahead Logging). If your dashboard queries the DB while the agent is rapidly writing to it, a standard SQLite setup will crash with database is locked errors. WAL mode prevents this.
+
 ##### [MODIFY] [agents.py](file:///d:/GitRepo/hermes_agent/backend/app/api/v1/agents.py)
 - Replace empty `return []` with real query against `hermes_state.db` sessions table + `kanban.db` tasks to derive active agents from recent session data
 
@@ -191,6 +183,9 @@ After auditing the codebase against [claude_implementation_plan.md](file:///d:/G
   - **Collapsible tool call accordions**: `▶ 🛠️ Executed web_search` → expand to see JSON payload
   - Token count badges per message
   - FTS5 search bar at the top
+  - **[NEW] Intervention Action Bar:** `[⏸️ Pause Agent]` to halt generation, `[🚀 Inject Correction]` to push a system prompt mid-task.
+  - **[NEW] Inline Message CRUD:** Edit/Delete specific messages to clear bad context from the SQLite database.
+  - **[NEW] "Rewind to Here" Button:** Truncates the agent's memory from that point forward and triggers a filesystem rollback.
 - Pagination for large sessions (100+ messages)
 
 ##### [MODIFY] [state_adapter.py](file:///d:/GitRepo/hermes_agent/backend/app/services/hermes/state_adapter.py)
@@ -203,6 +198,7 @@ After auditing the codebase against [claude_implementation_plan.md](file:///d:/G
 - Add `GET /sessions/{session_id}` — full detail endpoint
 - Add `GET /sessions/search?q=...` — FTS search endpoint
 - Add `GET /sessions/{session_id}/tool-calls` — tool call extraction
+- **[NEW] Add `/ws/sessions/{id}/stream`** for live token streaming. Allows real-time observability of the agent's internal reasoning token-by-token.
 
 ---
 
@@ -216,6 +212,7 @@ After auditing the codebase against [claude_implementation_plan.md](file:///d:/G
 - Enable/Disable toggle per server
 - "Test Connection" button that pings the server and reports status
 - Optional: MCP catalog browser for one-click install of approved servers
+- **[NEW] Human-in-the-Loop (HITL) Tool Approval UI:** When an agent attempts a high-risk action (e.g., execute_bash or write_file), modal pops up to Approve, Reject, or Edit the Payload.
 
 ##### [MODIFY] [mcp.py](file:///d:/GitRepo/hermes_agent/backend/app/api/v1/mcp.py)
 - Verify the existing 3,722-byte implementation handles:
@@ -388,6 +385,9 @@ After auditing the codebase against [claude_implementation_plan.md](file:///d:/G
   - `global_cooldown()` — pause all spawns when pool is saturated
 - Implement autonomy levels: `observe-only` → `suggest` → `auto-heal-low-risk` → `full-auto`
 
+##### [NEW] `logic_auditor.py` (or extend Warden)
+- Monitor consecutive tool failures and auto-pause hallucinating agents (e.g., failing to parse JSON or syntax errors 3 times in a row). Auto-pause and flag dashboard with `⚠️ Needs Human Review` alert.
+
 ##### [MODIFY] `features/warden/WardenScreen.tsx`
 - Event timeline with severity badges (INFO/WARNING/CRITICAL)
 - Key health dashboard with probe results per key
@@ -440,6 +440,7 @@ After auditing the codebase against [claude_implementation_plan.md](file:///d:/G
 - Add `GET /sandbox/diff` — git diff for current session
 - Add WebSocket endpoint `/ws/sandbox/terminal` for container PTY
 - Add `GET /sandbox/activity` — SSE stream of file change events
+- **[NEW] WebSocket-based HITL Approval Queue:** WebSocket handlers for high-risk tool interception.
 
 ---
 

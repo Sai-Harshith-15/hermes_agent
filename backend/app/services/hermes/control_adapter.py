@@ -34,3 +34,9 @@ class HermesControlAdapter:
 
     def pause_agent(self, agent_name: str) -> dict:
         return self._run_cli(["agent", "pause", agent_name])
+
+    def resume_agent(self, agent_name: str) -> dict:
+        return self._run_cli(["agent", "resume", agent_name])
+
+    def kill_agent(self, agent_name: str) -> dict:
+        return self._run_cli(["agent", "kill", agent_name])

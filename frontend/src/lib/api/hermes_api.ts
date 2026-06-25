@@ -1,14 +1,6 @@
 import { API_BASE_URL as BASE_URL } from './client';
 
 export const hermesApi = {
-  getSessions: async (limit = 50) => {
-    const res = await fetch(`${BASE_URL}/sessions/?limit=${limit}`);
-    return res.json();
-  },
-  getMessages: async (sessionId: string) => {
-    const res = await fetch(`${BASE_URL}/sessions/${sessionId}/messages`);
-    return res.json();
-  },
   getTasks: async () => {
     const res = await fetch(`${BASE_URL}/kanban/tasks`);
     return res.json();

@@ -9,6 +9,14 @@ adapter = HermesStateAdapter()
 async def get_sessions(limit: int = 50) -> List[Dict[str, Any]]:
     return await adapter.get_recent_sessions(limit)
 
+@router.get("/search")
+async def search_sessions(q: str, limit: int = 50) -> List[Dict[str, Any]]:
+    return await adapter.search_sessions(q, limit)
+
+@router.get("/{session_id}")
+async def get_session_detail(session_id: str) -> Dict[str, Any]:
+    return await adapter.get_session_detail(session_id)
+
 @router.get("/{session_id}/messages")
 async def get_messages(session_id: str, limit: int = 100) -> List[Dict[str, Any]]:
     return await adapter.get_messages(session_id, limit)

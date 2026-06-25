@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Link } from 'lucide-react';
+import { Plus, Link, Power, PowerOff } from 'lucide-react';
 
 export function WebhooksScreen() {
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
-  const [newHook, setNewHook] = useState({ name: '', target_url: '' });
+  const [newHook, setNewHook] = useState({ name: '', target_url: '', event_filter: '*' });
 
   const fetchWebhooks = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/v1/messaging/webhooks', {
+      const res = await fetch('/api/v1/ops/hooks/webhooks', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setWebhooks(await res.json());
@@ -26,7 +26,7 @@ export function WebhooksScreen() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/v1/messaging/webhooks', {
+      const res = await fetch('/api/v1/ops/hooks/webhooks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(newHook)
@@ -34,7 +34,20 @@ export function WebhooksScreen() {
       const data = await res.json();
       alert(`Created! Your one-time HMAC secret is:\n\n${data.one_time_secret}\n\nPlease save this, you will not see it again.`);
       setShowAdd(false);
-      setNewHook({ name: '', target_url: '' });
+      setNewHook({ name: '', target_url: '', event_filter: '*' });
+      fetchWebhooks();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const toggleWebhook = async (id: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`/api/v1/ops/hooks/webhooks/${id}/toggle`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       fetchWebhooks();
     } catch (err) {
       console.error(err);
@@ -44,20 +57,27 @@ export function WebhooksScreen() {
   return (
     <div className="max-w-4xl space-y-6">
       <div className="flex justify-between items-center">
-        <div><h2 className="text-2xl font-bold text-white">Webhooks & Shell Hooks</h2></div>
+        <div>
+          <h2 className="text-2xl font-bold text-white">Webhooks & Shell Hooks</h2>
+          <p className="text-sm text-gray-400">Trigger scripts or HTTP endpoints on specific agent events.</p>
+        </div>
         <button onClick={() => setShowAdd(!showAdd)} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"><Plus size={16} className="inline mr-1"/> Create Hook</button>
       </div>
 
       {showAdd && (
         <form onSubmit={handleAdd} className="bg-gray-900 border border-emerald-500/30 p-5 rounded-xl mb-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs text-gray-400 mb-1">NAME / IDENTIFIER</label>
-              <input type="text" required placeholder="e.g. github-push-trigger" className="w-full bg-gray-950 border border-gray-700 rounded p-2 text-sm text-white" value={newHook.name} onChange={e => setNewHook({...newHook, name: e.target.value})} />
+              <input type="text" required placeholder="e.g. notify-slack" className="w-full bg-gray-950 border border-gray-700 rounded p-2 text-sm text-white" value={newHook.name} onChange={e => setNewHook({...newHook, name: e.target.value})} />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">TARGET SCRIPT / URL</label>
-              <input type="text" required placeholder="e.g. /home/user/deploy.sh" className="w-full bg-gray-950 border border-gray-700 rounded p-2 text-sm text-white" value={newHook.target_url} onChange={e => setNewHook({...newHook, target_url: e.target.value})} />
+              <label className="block text-xs text-gray-400 mb-1">TARGET URL</label>
+              <input type="text" required placeholder="https://api.example.com/webhook" className="w-full bg-gray-950 border border-gray-700 rounded p-2 text-sm text-white" value={newHook.target_url} onChange={e => setNewHook({...newHook, target_url: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">EVENT FILTER</label>
+              <input type="text" placeholder="*" className="w-full bg-gray-950 border border-gray-700 rounded p-2 text-sm text-white" value={newHook.event_filter} onChange={e => setNewHook({...newHook, event_filter: e.target.value})} />
             </div>
           </div>
           <button type="submit" className="bg-emerald-600 text-white px-4 py-2 rounded text-sm transition-colors">Generate Secret & Save</button>
@@ -71,15 +91,31 @@ export function WebhooksScreen() {
               <tr>
                 <th className="px-6 py-4 font-medium">Hook Name</th>
                 <th className="px-6 py-4 font-medium">Target</th>
-                <th className="px-6 py-4 font-medium">Hook ID (Truncated)</th>
+                <th className="px-6 py-4 font-medium">Filter</th>
+                <th className="px-6 py-4 font-medium">Status</th>
+                <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
               {webhooks.map((wh, idx) => (
-                <tr key={idx} className="hover:bg-gray-800/30">
+                <tr key={idx} className="hover:bg-gray-800/30 transition-colors">
                   <td className="px-6 py-4 font-medium text-gray-200">{wh.name}</td>
-                  <td className="px-6 py-4 font-mono text-emerald-400 text-xs">{wh.target_url}</td>
-                  <td className="px-6 py-4 font-mono text-xs">{wh.id}</td>
+                  <td className="px-6 py-4 font-mono text-emerald-400 text-xs max-w-xs truncate">{wh.target_url}</td>
+                  <td className="px-6 py-4 font-mono text-xs">{wh.event_filter || '*'}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 rounded text-xs ${wh.enabled !== false ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                      {wh.enabled !== false ? 'Active' : 'Disabled'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button 
+                      onClick={() => toggleWebhook(wh.id)}
+                      className="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-700 transition-colors"
+                      title={wh.enabled !== false ? "Disable" : "Enable"}
+                    >
+                      {wh.enabled !== false ? <PowerOff size={16} /> : <Power size={16} />}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

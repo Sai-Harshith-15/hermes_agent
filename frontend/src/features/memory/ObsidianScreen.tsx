@@ -5,7 +5,7 @@ import {
   CheckCircle, Edit3, Save,
   Tv, Link, Shield, ToggleLeft
 } from 'lucide-react';
-import { useDashboardStore } from '../../store/dashboardStore';
+import { useSettingsStore } from '../../store/settingsStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hermesApi } from '../../lib/api/hermes_api';
 import { controlApi } from '../../lib/api/control_api';
@@ -20,7 +20,7 @@ export function ObsidianScreen() {
     enabled: searchQuery.length > 2
   });
 
-  const { logs } = useDashboardStore();
+  const { logs } = useSettingsStore();
   const memoryLogs = searchQuery.length > 2 ? searchResults : logs.filter(log => log.message.toLowerCase().includes("memory") || log.message.toLowerCase().includes("skill") || log.message.toLowerCase().includes("file"));
 
   return (

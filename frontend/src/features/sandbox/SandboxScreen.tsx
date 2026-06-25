@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Terminal, MessageSquare, Folder, File as FileIcon, Save, Shield } from 'lucide-react';
-import { useDashboardStore } from '../../store/dashboardStore';
+import { useSettingsStore } from '../../store/settingsStore';
 import { sendAdminIntervention } from '../../lib/api/client';
 import { sandboxApi } from '../../lib/api/sandbox_api';
 import { useQuery, useMutation } from '@tanstack/react-query';
 
 export function SandboxScreen() {
-  const { logs } = useDashboardStore();
+  const { logs } = useSettingsStore();
   const [chatInput, setChatInput] = useState('');
   const logEndRef = useRef<HTMLDivElement>(null);
   

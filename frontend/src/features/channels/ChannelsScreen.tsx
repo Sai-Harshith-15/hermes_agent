@@ -3,14 +3,10 @@ import {
   Terminal, Bot, 
   Database, Globe, Settings, Search, Plus, 
   CheckCircle, Edit3, Save,
-  Tv, Link, Shield, ToggleLeft
+  Tv, Link, Shield, ToggleLeft, RefreshCcw
 } from 'lucide-react';
-import { useDashboardStore } from '../../store/dashboardStore';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { hermesApi } from '../../lib/api/hermes_api';
-import { controlApi } from '../../lib/api/control_api';
-import { fetchApi, getConfigYaml, updateConfigYaml, getEnv, updateEnv, runOp } from '../../lib/api/client';
-const Editor = React.lazy(() => import('@monaco-editor/react'));
+import { messagingApi } from '../../lib/api/messaging_api';
+import { toast } from 'sonner';
 
 export function ChannelsScreen() {
   const [platform, setPlatform] = useState('Telegram');
@@ -36,37 +32,51 @@ export function ChannelsScreen() {
   const handleSetup = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/v1/messaging/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ platform, bot_token: botToken })
-      });
-      const data = await res.json();
-      alert(data.message);
+      const data = await messagingApi.setupGateway(platform, botToken);
+      toast.success(data.message || `${platform} configured successfully`);
       setBotToken('');
     } catch (err) {
+      toast.error(`Failed to setup gateway: ${err}`);
       console.error(err);
     }
   };
 
   const handleApprove = async (userId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`/api/v1/messaging/pairing/${userId}/approve`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await messagingApi.approvePairing(userId);
       fetchPairing();
-      alert(`User ${userId} approved`);
+      toast.success(`User ${userId} approved successfully`);
     } catch (err) {
+      toast.error(`Failed to approve user: ${err}`);
+      console.error(err);
+    }
+  };
+
+  const handleRestart = async () => {
+    try {
+      const data = await messagingApi.restartGateway();
+      if (data.status === 'success') {
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (err) {
+      toast.error(`Failed to trigger restart: ${err}`);
       console.error(err);
     }
   };
 
   return (
     <div className="max-w-5xl space-y-6">
-      <div><h2 className="text-2xl font-bold text-white">Output Channels & Pairing</h2></div>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-white">Output Channels & Pairing</h2>
+        <button 
+          onClick={handleRestart}
+          className="bg-gray-800 hover:bg-gray-700 text-gray-200 px-4 py-2 rounded-lg text-sm font-medium flex items-center transition-colors border border-gray-700"
+        >
+          <RefreshCcw size={16} className="mr-2"/> Restart Gateway
+        </button>
+      </div>
       
       <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-sm">
         <h3 className="text-lg font-bold text-gray-200 mb-4">Setup Bot Gateway</h3>
@@ -103,12 +113,12 @@ export function ChannelsScreen() {
                 <td className="px-6 py-4 flex items-center"><Tv size={16} className="mr-2 text-gray-500"/>{req.platform}</td>
                 <td className="px-6 py-4 font-mono text-emerald-400">{req.code}</td>
                 <td className="px-6 py-4 text-right">
-                  <button onClick={() => handleApprove(req.user_id)} className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 px-3 py-1.5 rounded text-xs">Approve</button>
+                  <button onClick={() => handleApprove(req.user_id)} className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 px-3 py-1.5 rounded text-xs transition-colors">Approve</button>
                 </td>
               </tr>
             ))}
             {pairingRequests.length === 0 && (
-              <tr><td colSpan={4} className="px-6 py-4 text-center text-gray-500">No pending pairing requests</td></tr>
+              <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500">No pending pairing requests</td></tr>
             )}
           </tbody>
         </table>
@@ -116,4 +126,3 @@ export function ChannelsScreen() {
     </div>
   );
 }
-

@@ -1,8 +1,10 @@
 import { Activity, Server, HardDrive, Cpu, AlertTriangle, Bot, Clock, Play, Square } from 'lucide-react';
-import { useDashboardStore } from '../../store/dashboardStore';
+import { useSettingsStore } from '../../store/settingsStore';
+import { useVaultStore } from '../../store/vaultStore';
 
 export function DashboardScreen() {
-  const { hostMetrics, apiKeys, logs } = useDashboardStore();
+  const { hostMetrics, logs } = useSettingsStore();
+  const { apiKeys } = useVaultStore();
 
   const alerts = logs
     .filter(log => log.log_level === 'WARNING' || log.log_level === 'ERROR')

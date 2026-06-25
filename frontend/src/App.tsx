@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 import { WS_BASE_URL, fetchDashboardState } from './lib/api/client';
-import { useDashboardStore } from './store/dashboardStore';
+import { useSettingsStore } from './store/settingsStore';
 import { AppRoutes } from './routes';
 import { PluginLoader } from './features/misc/PluginLoader';
 import { login as apiLogin, fetchMe } from './lib/api/auth';
@@ -17,6 +17,7 @@ import { LoginScreen } from './features/auth/LoginScreen';
 import { NavSection } from './components/layout/NavSection';
 import { NavItem } from './components/layout/NavItem';
 import { TopBar } from './components/layout/TopBar';
+import { Toaster } from 'sonner';
 
 export default function AgentCommandCenter() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -26,7 +27,7 @@ export default function AgentCommandCenter() {
   const { 
     setHostMetrics, setApiKeys, setAgentRuns, setTasks, setLogs,
     wsConnected, setWsConnected, updateApiKey, addLog, updateAgentRun, updateTask
-  } = useDashboardStore();
+  } = useSettingsStore();
 
   const currentScreen = location.pathname.substring(1) || 'dashboard';
 
@@ -125,6 +126,7 @@ export default function AgentCommandCenter() {
 
   return (
     <div className="flex h-screen w-full bg-gray-950 text-gray-300 font-sans overflow-hidden">
+      <Toaster theme="dark" position="bottom-right" />
       {/* Sidebar Navigation */}
       <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col shrink-0">
         <div className="p-5 border-b border-gray-800 flex items-center space-x-3">

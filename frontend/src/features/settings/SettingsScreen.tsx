@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { 
   Terminal, Bot, 
   Database, Globe, Settings, Search, Plus, 
-  CheckCircle, Edit3, Save,
-  Tv, Link, Shield, ToggleLeft
+  CheckCircle, Edit3, Save, Trash2, Clock,
+  Tv, Link, Shield, ToggleLeft, History
 } from 'lucide-react';
-import { useDashboardStore } from '../../store/dashboardStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hermesApi } from '../../lib/api/hermes_api';
 import { controlApi } from '../../lib/api/control_api';
@@ -13,16 +12,27 @@ import { fetchApi, getConfigYaml, updateConfigYaml, getEnv, updateEnv, runOp } f
 const Editor = React.lazy(() => import('@monaco-editor/react'));
 
 export function SettingsScreen() {
-  const [activeTab, setActiveTab] = useState<'config' | 'env' | 'ops'>('config');
+  const [activeTab, setActiveTab] = useState<'config' | 'env' | 'ops' | 'checkpoints'>('config');
   const [configContent, setConfigContent] = useState('');
   const [envContent, setEnvContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [opLogs, setOpLogs] = useState('');
   const [isOpModalOpen, setIsOpModalOpen] = useState(false);
+  const [checkpoints, setCheckpoints] = useState<any[]>([]);
+
+  const fetchCheckpoints = async () => {
+    try {
+      const res = await fetchApi('/ops/checkpoints');
+      setCheckpoints(res);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   React.useEffect(() => {
     getConfigYaml().then(res => setConfigContent(res.content));
     getEnv().then(res => setEnvContent(res.content));
+    fetchCheckpoints();
   }, []);
 
   const handleSave = async () => {
@@ -37,14 +47,43 @@ export function SettingsScreen() {
     setIsLoading(false);
   };
 
-  const executeOp = async (op: string) => {
+  const executeOp = (op: string) => {
     setIsOpModalOpen(true);
-    setOpLogs(`Executing ${op}...\nWaiting for system response...`);
+    setOpLogs(`Connecting to stream for ${op}...\n`);
+    
+    const token = localStorage.getItem('token') || '';
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    // In dev, use the VITE_API_BASE_URL host or fallback to localhost:8000 if not available
+    const host = import.meta.env.VITE_API_BASE_URL ? new URL(import.meta.env.VITE_API_BASE_URL).host : window.location.host;
+    const wsUrl = `${wsProtocol}//${host}/api/v1/ops/ws?op=${op}&token=${token}`;
+    
+    const ws = new WebSocket(wsUrl);
+    
+    ws.onopen = () => {
+      setOpLogs(prev => prev + `Connected.\n`);
+    };
+    
+    ws.onmessage = (event) => {
+      setOpLogs(prev => prev + event.data + '\n');
+    };
+    
+    ws.onerror = (error) => {
+      setOpLogs(prev => prev + `\nWebSocket Error observed. Check console.\n`);
+      console.error("WebSocket Error: ", error);
+    };
+    
+    ws.onclose = () => {
+      setOpLogs(prev => prev + `\n[Stream closed]\n`);
+    };
+  };
+
+  const deleteCheckpoint = async (filename: string) => {
+    if (!confirm(`Are you sure you want to delete ${filename}?`)) return;
     try {
-      const res = await runOp(op);
-      setOpLogs((prev) => prev + '\n\n' + res.logs);
+      await fetchApi(`/ops/checkpoints/${filename}`, { method: 'DELETE' });
+      fetchCheckpoints();
     } catch (e: any) {
-      setOpLogs((prev) => prev + '\n\nError: ' + e.message);
+      alert('Failed to delete checkpoint: ' + e.message);
     }
   };
 
@@ -66,6 +105,7 @@ export function SettingsScreen() {
         <button onClick={() => setActiveTab('config')} className={`px-4 py-2 rounded font-medium text-sm transition-colors ${activeTab === 'config' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-gray-200'}`}>config.yaml</button>
         <button onClick={() => setActiveTab('env')} className={`px-4 py-2 rounded font-medium text-sm transition-colors ${activeTab === 'env' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-gray-200'}`}>.env Vault</button>
         <button onClick={() => setActiveTab('ops')} className={`px-4 py-2 rounded font-medium text-sm transition-colors ${activeTab === 'ops' ? 'bg-emerald-500/20 text-emerald-400' : 'text-gray-400 hover:text-gray-200'}`}>System Ops</button>
+        <button onClick={() => setActiveTab('checkpoints')} className={`px-4 py-2 rounded font-medium text-sm transition-colors ${activeTab === 'checkpoints' ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400 hover:text-gray-200'}`}>Checkpoints</button>
       </div>
 
       <div className="flex-1 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm relative">
@@ -110,6 +150,56 @@ export function SettingsScreen() {
               <h3 className="font-bold text-gray-200 text-lg">Backup Database</h3>
               <p className="text-sm text-gray-400 mt-2">Snapshot SQLite databases instantly.</p>
             </div>
+          </div>
+        )}
+        
+        {activeTab === 'checkpoints' && (
+          <div className="p-6 h-full overflow-y-auto">
+            {checkpoints.length > 0 ? (
+              <div className="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden">
+                <table className="w-full text-left text-sm text-gray-400">
+                  <thead className="bg-gray-800/30 text-xs uppercase text-gray-500 border-b border-gray-800">
+                    <tr>
+                      <th className="px-6 py-4 font-medium">Checkpoint Name</th>
+                      <th className="px-6 py-4 font-medium">Created At</th>
+                      <th className="px-6 py-4 font-medium">Size</th>
+                      <th className="px-6 py-4 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {checkpoints.map((cp, idx) => (
+                      <tr key={idx} className="hover:bg-gray-800/30 transition-colors">
+                        <td className="px-6 py-4 font-medium text-purple-400 flex items-center">
+                          <History size={16} className="mr-2 text-gray-500"/>
+                          {cp.filename}
+                        </td>
+                        <td className="px-6 py-4 font-mono text-xs text-gray-300">
+                          {new Date(cp.created_at * 1000).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-xs">
+                          {(cp.size_bytes / 1024 / 1024).toFixed(2)} MB
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button 
+                            onClick={() => deleteCheckpoint(cp.filename)}
+                            className="text-gray-500 hover:text-red-400 p-1 rounded hover:bg-gray-800 transition-colors"
+                            title="Delete Checkpoint"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="bg-gray-950 border border-gray-800 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center text-center space-y-4 py-16">
+                <History size={48} className="text-gray-600 mb-2"/>
+                <h3 className="text-xl font-bold text-gray-300">No Checkpoints Found</h3>
+                <p className="text-gray-500 text-sm">Rollback directory is empty.</p>
+              </div>
+            )}
           </div>
         )}
 

@@ -40,6 +40,14 @@ def setup_messaging(req: MessagingSetupRequest):
         
     return {"status": "success", "message": f"{req.platform} configured successfully"}
 
+@router.post("/restart")
+def restart_gateway():
+    try:
+        subprocess.Popen(['pkill', '-f', 'hermes-gateway'])
+        return {"status": "success", "message": "Gateway restart triggered successfully"}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to restart gateway: {str(e)}"}
+
 @router.get("/pairing")
 async def get_pairing_requests(session: AsyncSession = Depends(get_db)):
     stmt = select(PairingRequest).where(PairingRequest.status == "pending")
@@ -80,43 +88,4 @@ def get_themes():
         
     return themes
 
-class WebhookCreateRequest(BaseModel):
-    name: str
-    target_url: str
 
-@router.get("/webhooks")
-def get_webhooks():
-    hooks_file = adapter.hermes_dir / "shell-hooks-allowlist.json"
-    if not hooks_file.exists():
-        return []
-    try:
-        with open(hooks_file, "r") as f:
-            return json.load(f)
-    except Exception:
-        return []
-
-@router.post("/webhooks")
-def create_webhook(req: WebhookCreateRequest):
-    hooks_file = adapter.hermes_dir / "shell-hooks-allowlist.json"
-    hooks = []
-    if hooks_file.exists():
-        try:
-            with open(hooks_file, "r") as f:
-                hooks = json.load(f)
-        except Exception:
-            pass
-            
-    secret = secrets.token_hex(32)
-    new_hook = {
-        "id": secrets.token_hex(4),
-        "name": req.name,
-        "target_url": req.target_url,
-        "hmac_secret": secret
-    }
-    
-    hooks.append(new_hook)
-    
-    with open(hooks_file, "w") as f:
-        json.dump(hooks, f, indent=2)
-        
-    return {"status": "success", "hook": new_hook, "one_time_secret": secret}

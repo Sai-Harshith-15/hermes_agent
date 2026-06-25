@@ -96,6 +96,42 @@ async def install_skill(req: InstallSkillRequest, background_tasks: BackgroundTa
     background_tasks.add_task(stream_install_process, req.skill_id)
     return {"status": "installing"}
 
+async def stream_update_all_process():
+    import shlex
+    cmd = shlex.split("hermes skills update")
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+        )
+        
+        if proc.stdout:
+            while True:
+                line = await proc.stdout.readline()
+                if not line:
+                    break
+                await manager.broadcast({
+                    "type": "ops_log",
+                    "data": {"skill_id": "update-all", "log": line.decode("utf-8")}
+                })
+        
+        await proc.wait()
+        await manager.broadcast({
+            "type": "ops_log",
+            "data": {"skill_id": "update-all", "log": f"\nProcess exited with code {proc.returncode}"}
+        })
+    except Exception as e:
+        await manager.broadcast({
+            "type": "ops_log",
+            "data": {"skill_id": "update-all", "log": f"\nError: {str(e)}"}
+        })
+
+@router.post("/update-all")
+async def update_all_skills(background_tasks: BackgroundTasks):
+    background_tasks.add_task(stream_update_all_process)
+    return {"status": "updating"}
+
 # To not break existing get_skills
 @router.get("/")
 def get_skills_legacy() -> List[Dict[str, Any]]:
