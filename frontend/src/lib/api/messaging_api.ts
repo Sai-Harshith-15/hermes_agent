@@ -12,6 +12,9 @@ export const messagingApi = {
       method: 'POST'
     });
   },
+  getPairingRequests: async () => {
+    return fetchApi('/messaging/pairing');
+  },
   restartGateway: async () => {
     // In our backend, setup does a restart. We'll make a dedicated restart route if we want, or just re-trigger setup with empty if backend supports it.
     // Wait, the plan asked to add a dedicated "Restart Gateway" button. 

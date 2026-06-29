@@ -9,8 +9,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hermesApi } from '../../lib/api/hermes_api';
 import { controlApi } from '../../lib/api/control_api';
 import { fetchApi, getConfigYaml, updateConfigYaml, getEnv, updateEnv, runOp } from '../../lib/api/client';
+import { Terminal as XTerminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import '@xterm/xterm/css/xterm.css';
 const Editor = React.lazy(() => import('@monaco-editor/react'));
-
 export function PluginsScreen() {
   const [skills, setSkills] = useState<any[]>([]);
   const [installingSkill, setInstallingSkill] = useState<string | null>(null);

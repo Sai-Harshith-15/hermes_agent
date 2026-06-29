@@ -1,96 +1,60 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Dict, Any, List
-import os
-from pathlib import Path
-from dotenv import set_key, get_key
-from app.services.hermes.config_adapter import HermesConfigAdapter
-from ruamel.yaml import YAML
+import logging
+from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import select
+from app.db.database import get_db
+from app.models.keys import ApiKeyPool
+from app.models.users import User
+from app.api.deps import get_current_user
+from app.core.vault import encrypt_secret, decrypt_secret, mask_secret
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
-adapter = HermesConfigAdapter()
-ryaml = YAML()
-ryaml.preserve_quotes = True
 
 class VaultAddRequest(BaseModel):
     provider: str
     key: str
 
 @router.get("")
-def get_vault_keys() -> List[Dict[str, Any]]:
-    config = adapter.read_config()
-    llm = config.get("llm", {})
-    providers = llm.get("providers", {})
-    api_keys = llm.get("api_keys", [])
+async def get_vault_keys(session: AsyncSession = Depends(get_db)) -> List[Dict[str, Any]]:
+    result = await session.execute(select(ApiKeyPool))
+    db_keys = result.scalars().all()
     
-    # Just returning the providers array from the config and their mapped status
     keys = []
-    # If the user's config structure is llm.providers: { openrouter: { ... } }
-    # Let's extract masked keys from api_keys list if it's a list of keys or names
-    for key_entry in api_keys:
-        if isinstance(key_entry, dict):
-            provider = key_entry.get("provider", "unknown")
-            key_id = key_entry.get("key_id", "unknown")
-            # We don't return the raw key, just a masked version if stored, 
-            # or maybe the vault just shows how many keys are in rotation.
-            keys.append({
-                "provider": provider,
-                "key_id": key_id,
-                "masked_key": f"sk-{provider[:2]}-****"
-            })
-        elif isinstance(key_entry, str):
-            # If it's just a string reference
-            keys.append({
-                "provider": "unknown",
-                "key_id": key_entry,
-                "masked_key": f"sk-****"
-            })
-            
-    # Include providers that might not have keys in the rotation yet
-    for prov, data in providers.items():
-        if not any(k.get("provider") == prov for k in keys):
-            keys.append({
-                "provider": prov,
-                "key_id": "None",
-                "masked_key": "No key configured"
-            })
-            
+    for k in db_keys:
+        keys.append({
+            "provider": k.provider,
+            "key_id": str(k.id),
+            "masked_key": k.api_key_masked,
+            "status": k.status,
+            "current_usage_pct": k.current_usage_pct,
+            "rpm_limit": k.rpm_limit
+        })
     return keys
 
 @router.post("/add")
-def add_vault_key(req: VaultAddRequest):
-    raw_config = adapter.get_raw_config()
-    if not raw_config:
-        raw_config = "llm:\n  providers: {}\n  api_keys: []\n"
-        
+async def add_vault_key(req: VaultAddRequest, session: AsyncSession = Depends(get_db)):
     try:
-        data = ryaml.load(raw_config)
-        providers = data.setdefault('llm', {}).setdefault('providers', {})
-        provider_config = providers.setdefault(req.provider, {})
-        api_keys = provider_config.setdefault('api_keys', [])
+        masked = mask_secret(req.key)
+        enc = encrypt_secret(req.key)
         
-        # Determine the next index
-        idx = len(api_keys) + 1
-        env_var_name = f"{req.provider.upper()}_KEY_{idx}"
+        new_key = ApiKeyPool(
+            provider=req.provider,
+            model_name="default",
+            api_key_masked=masked,
+            encrypted_secret=enc,
+            status="Active",
+            current_usage_pct=0.0,
+            rpm_limit=60
+        )
+        session.add(new_key)
+        await session.commit()
+        await session.refresh(new_key)
         
-        # Add to YAML rotation
-        if f"${env_var_name}" not in api_keys:
-            api_keys.append(f"${env_var_name}")
-        
-        # Save YAML
-        import io
-        buf = io.StringIO()
-        ryaml.dump(data, buf)
-        adapter.update_raw_config(buf.getvalue())
-        
-        # Update .env
-        env_path = adapter.hermes_dir / ".env"
-        if not env_path.exists():
-            env_path.touch()
-            
-        set_key(str(env_path), env_var_name, req.key)
-        
-        return {"status": "success", "key_id": env_var_name}
+        return {"status": "success", "key_id": str(new_key.id)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -98,22 +62,33 @@ class VaultRevealRequest(BaseModel):
     key_id: str
 
 @router.post("/reveal")
-def reveal_vault_key(req: VaultRevealRequest):
-    env_path = adapter.hermes_dir / ".env"
-    if not env_path.exists():
-        raise HTTPException(status_code=404, detail="Vault env file not found")
+async def reveal_vault_key(
+    req: VaultRevealRequest, 
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
+    if current_user.role != 'owner':
+        raise HTTPException(status_code=403, detail="Only owners can reveal vault keys")
         
-    val = get_key(str(env_path), req.key_id)
-    if not val:
+    try:
+        key_id_int = int(req.key_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid key_id format")
+        
+    result = await session.execute(select(ApiKeyPool).where(ApiKeyPool.id == key_id_int))
+    db_key = result.scalars().first()
+    
+    if not db_key or not db_key.encrypted_secret:
         raise HTTPException(status_code=404, detail="Key not found")
         
-    # In a real system, you'd add an audit log entry here
+    val = decrypt_secret(db_key.encrypted_secret)
+    logger.warning(f"AUDIT: User {current_user.username} revealed vault key ID {req.key_id} (Provider: {db_key.provider})")
     return {"status": "success", "key": val}
 
 class VaultRotateRequest(BaseModel):
     key_id: str
 
 @router.post("/rotate")
-def rotate_vault_key(req: VaultRotateRequest):
-    # For now, just return success. Actual rotation logic will be built in Warden Phase 8
+async def rotate_vault_key(req: VaultRotateRequest, session: AsyncSession = Depends(get_db)):
     return {"status": "success", "message": f"Rotation requested for {req.key_id}"}
+

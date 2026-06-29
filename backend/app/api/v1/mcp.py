@@ -22,14 +22,14 @@ class MCPTestRequest(BaseModel):
     command_or_url: str
 
 @router.get("")
-def get_mcp_servers() -> List[Dict[str, Any]]:
+async def get_mcp_servers() -> List[Dict[str, Any]]:
     config = adapter.read_config()
     mcp_servers = config.get("mcp_servers", {})
     # Convert dict to list
     return [{"name": k, **v} for k, v in mcp_servers.items()]
 
 @router.post("")
-def add_mcp_server(req: MCPCreateRequest):
+async def add_mcp_server(req: MCPCreateRequest):
     raw_config = adapter.get_raw_config()
     if not raw_config:
         raw_config = "mcp_servers: {}\n"
@@ -54,7 +54,7 @@ def add_mcp_server(req: MCPCreateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{server_name}")
-def delete_mcp_server(server_name: str):
+async def delete_mcp_server(server_name: str):
     raw_config = adapter.get_raw_config()
     if not raw_config:
         return {"status": "not_found"}

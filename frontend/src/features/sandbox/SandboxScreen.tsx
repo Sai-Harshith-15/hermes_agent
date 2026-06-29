@@ -9,6 +9,8 @@ import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
 import '@xterm/xterm/css/xterm.css';
 
+const Editor = React.lazy(() => import('@monaco-editor/react'));
+
 export function SandboxScreen() {
   const { logs } = useSettingsStore();
   const [chatInput, setChatInput] = useState('');
@@ -209,7 +211,7 @@ export function SandboxScreen() {
                   language="javascript"
                   theme="vs-dark"
                   value={fileContent}
-                  onChange={(value) => setFileContent(value || '')}
+                  onChange={(value: string | undefined) => setFileContent(value || '')}
                   options={{
                     minimap: { enabled: false },
                     fontSize: 14,

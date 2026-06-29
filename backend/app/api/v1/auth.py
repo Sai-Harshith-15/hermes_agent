@@ -4,10 +4,32 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 from app.db.database import get_db
 from app.models.users import User
-from app.core.security import verify_password, create_access_token
+from app.core.security import verify_password, create_access_token, get_password_hash
+from pydantic import BaseModel
+from sqlalchemy import func
 from app.api.deps import get_current_user
 
 router = APIRouter()
+
+class SetupRequest(BaseModel):
+    username: str = "admin"
+    password: str = "admin123"
+
+@router.post("/setup")
+async def setup_admin(req: SetupRequest, session: AsyncSession = Depends(get_db)):
+    result = await session.execute(select(func.count(User.id)))
+    count = result.scalar()
+    if count > 0:
+        raise HTTPException(status_code=400, detail="Setup already complete")
+    
+    new_user = User(
+        username=req.username,
+        hashed_password=get_password_hash(req.password),
+        role="owner"
+    )
+    session.add(new_user)
+    await session.commit()
+    return {"status": "success", "message": "Admin user created"}
 
 @router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(get_db)):

@@ -15,11 +15,8 @@ export function ChannelsScreen() {
 
   const fetchPairing = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/v1/messaging/pairing', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) setPairingRequests(await res.json());
+      const data = await messagingApi.getPairingRequests();
+      setPairingRequests(data);
     } catch (err) {
       console.error(err);
     }

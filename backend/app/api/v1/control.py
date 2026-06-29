@@ -23,26 +23,26 @@ class KillAgentRequest(BaseModel):
     agent_name: str
 
 @router.post("/inject-task")
-def inject_task(req: InjectTaskRequest):
+async def inject_task(req: InjectTaskRequest):
     intent = adapter.inject_task(req.task_spec, req.priority)
     return {"status": "success", "intent": intent}
 
 @router.post("/steer-agent")
-def steer_agent(req: SteerAgentRequest):
+async def steer_agent(req: SteerAgentRequest):
     intent = adapter.steer_agent(req.agent_name, req.message)
     return {"status": "success", "intent": intent}
 
 @router.post("/pause-agent")
-def pause_agent(req: PauseAgentRequest):
+async def pause_agent(req: PauseAgentRequest):
     intent = adapter.pause_agent(req.agent_name)
     return {"status": "success", "intent": intent}
 
 @router.post("/resume-agent")
-def resume_agent(req: ResumeAgentRequest):
+async def resume_agent(req: ResumeAgentRequest):
     intent = adapter.resume_agent(req.agent_name)
     return {"status": "success", "intent": intent}
 
 @router.post("/kill-agent")
-def kill_agent(req: KillAgentRequest):
+async def kill_agent(req: KillAgentRequest):
     intent = adapter.kill_agent(req.agent_name)
     return {"status": "success", "intent": intent}

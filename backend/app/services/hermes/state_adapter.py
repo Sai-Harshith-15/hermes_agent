@@ -13,7 +13,7 @@ class HermesStateAdapter:
             return []
         db_uri = f"file:{self.db_path}"
         async with aiosqlite.connect(db_uri, uri=True) as db:
-            await db.execute("PRAGMA journal_mode=WAL;")
+            await db.execute("PRAGMA query_only=1;")
             db.row_factory = aiosqlite.Row
             async with db.execute(query, params) as cursor:
                 rows = await cursor.fetchall()
@@ -21,6 +21,13 @@ class HermesStateAdapter:
 
     async def get_recent_sessions(self, limit: int = 50) -> List[Dict[str, Any]]:
         query = "SELECT * FROM agent_runs ORDER BY start_time DESC LIMIT ?"
+        try:
+            return await self._execute_query(query, (limit,))
+        except Exception:
+            return []
+
+    async def get_recent_tasks(self, limit: int = 50) -> List[Dict[str, Any]]:
+        query = "SELECT * FROM tasks ORDER BY start_time DESC LIMIT ?"
         try:
             return await self._execute_query(query, (limit,))
         except Exception:

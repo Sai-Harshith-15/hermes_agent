@@ -24,7 +24,7 @@ class PairingApproveRequest(BaseModel):
     user_id: str
 
 @router.post("/setup")
-def setup_messaging(req: MessagingSetupRequest):
+async def setup_messaging(req: MessagingSetupRequest):
     env_path = adapter.hermes_dir / ".env"
     if not env_path.exists():
         env_path.touch()
@@ -41,7 +41,7 @@ def setup_messaging(req: MessagingSetupRequest):
     return {"status": "success", "message": f"{req.platform} configured successfully"}
 
 @router.post("/restart")
-def restart_gateway():
+async def restart_gateway():
     try:
         subprocess.Popen(['pkill', '-f', 'hermes-gateway'])
         return {"status": "success", "message": "Gateway restart triggered successfully"}
@@ -70,7 +70,7 @@ async def approve_pairing(user_id: str, session: AsyncSession = Depends(get_db))
     return {"status": "success", "message": f"User {user_id} approved"}
 
 @router.get("/themes")
-def get_themes():
+async def get_themes():
     themes_dir = adapter.hermes_dir / "dashboard-themes"
     themes_dir.mkdir(parents=True, exist_ok=True)
     themes = []
