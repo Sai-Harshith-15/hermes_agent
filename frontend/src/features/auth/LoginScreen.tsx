@@ -1,19 +1,31 @@
 import React, { useState } from 'react';
 import { ChevronRight, Network } from 'lucide-react';
-import { login as apiLogin } from '../../lib/api/auth';
+import { login as apiLogin, setupAdmin } from '../../lib/api/auth';
 
 export function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSetup, setIsSetup] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await apiLogin(username, password);
       onLogin();
-    } catch (err) {
-      setError('Invalid credentials');
+    } catch (err: any) {
+      setError(err.message || 'Invalid credentials');
+    }
+  };
+
+  const handleSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await setupAdmin(username, password);
+      setIsSetup(false);
+      setError('Setup complete. You can now login.');
+    } catch (err: any) {
+      setError(err.message || 'Setup failed');
     }
   };
 
@@ -32,7 +44,7 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
         
         {error && <div className="text-red-500 text-sm text-center mb-4">{error}</div>}
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={isSetup ? handleSetup : handleLogin} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">USERNAME</label>
             <input type="text" value={username} onChange={e => setUsername(e.target.value)} required className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono" />
@@ -42,10 +54,19 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono" />
           </div>
           <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center space-x-2">
-            <span>Establish Connection</span>
+            <span>{isSetup ? 'Complete Setup' : 'Establish Connection'}</span>
             <ChevronRight size={18} />
           </button>
         </form>
+        
+        <div className="mt-6 text-center">
+          <button 
+            onClick={() => setIsSetup(!isSetup)}
+            className="text-xs text-gray-500 hover:text-gray-400"
+          >
+            {isSetup ? 'Return to Login' : 'First time? Setup Admin'}
+          </button>
+        </div>
       </div>
     </div>
   );

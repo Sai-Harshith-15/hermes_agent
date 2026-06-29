@@ -25,3 +25,16 @@ export async function login(username: string, password: string) {
 export async function fetchMe() {
   return await fetchApi('/auth/me');
 }
+
+export async function setupAdmin(username: string, password: string) {
+  const response = await fetch(`${API_BASE_URL}/auth/setup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Setup failed' }));
+    throw new Error(err.detail || 'Setup failed');
+  }
+  return response.json();
+}

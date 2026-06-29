@@ -7,6 +7,12 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.db.database import init_db
 from app.websocket_manager import manager
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.errors import RateLimitExceeded
+
+# API Routers
 from app.api.v1.telemetry import router as telemetry_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.auth import router as auth_router
@@ -35,6 +41,7 @@ import mimetypes
 from jose import jwt, JWTError
 from app.services.warden.scheduler import start_scheduler, stop_scheduler
 from app.api.deps import get_current_user
+from app.core.limiter import limiter
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,11 +54,14 @@ async def lifespan(app: FastAPI):
     stop_scheduler()
 
 app = FastAPI(title=settings.PROJECT_NAME, version="1.0.0", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # CORS configurations - tightening for production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"], # Update with actual frontend origins
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     
     # Fernet symmetric encryption key for the Vault (must be 32 url-safe base64-encoded bytes)
     MASTER_KEY: str = "ZGVmYXVsdF9tYXN0ZXJfa2V5X2NoYW5nZV9tZV9ub3c="
+    
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
     @property
     def DATABASE_URL(self) -> str:

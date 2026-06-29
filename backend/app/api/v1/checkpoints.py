@@ -1,7 +1,9 @@
 import os
 import pathlib
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
+from app.models.users import User
+from app.core.rbac import RequireRole
 
 router = APIRouter()
 
@@ -36,17 +38,21 @@ async def list_checkpoints():
     return sorted(checkpoints, key=lambda x: x.created_at, reverse=True)
 
 @router.delete("/{filename}")
-async def delete_checkpoint(filename: str):
+async def delete_checkpoint(
+    filename: str,
+    _user: User = Depends(RequireRole(["owner", "admin"])),
+):
     """
     Safely deletes a checkpoint file from the rollback directory.
+    Only owner/admin roles may delete rollback snapshots.
     """
     # CRITICAL: Strips out any "../" path traversal attacks
-    secure_filename = os.path.basename(filename) 
-    
+    secure_filename = os.path.basename(filename)
+
     target_path = os.path.join(os.path.expanduser("~/.hermes/rollback"), secure_filename)
-    
+
     if os.path.exists(target_path):
         os.remove(target_path)
         return {"status": "success", "deleted": secure_filename}
-    
+
     raise HTTPException(status_code=404, detail="File not found")

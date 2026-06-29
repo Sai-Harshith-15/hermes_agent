@@ -5,8 +5,21 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 router = APIRouter()
 
+from jose import jwt, JWTError
+from app.core.config import settings
+
 @router.websocket("")
-async def pty_endpoint(websocket: WebSocket):
+async def pty_endpoint(websocket: WebSocket, token: str):
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            await websocket.close(code=1008)
+            return
+    except JWTError:
+        await websocket.close(code=1008)
+        return
+
     await websocket.accept()
     
     # Check if we're on Windows where pty is not available

@@ -71,14 +71,18 @@ def test_kill_agent_endpoint(mock_control_adapter):
 
 def test_control_adapter_subprocess(tmp_path):
     adapter = HermesControlAdapter(hermes_dir=str(tmp_path))
-    
+    # Force the adapter into "available" mode so the subprocess path is exercised,
+    # regardless of whether hermes is actually installed in this environment.
+    adapter._available = True
+
     with patch("subprocess.run") as mock_run:
         mock_run.return_value.stdout = "Task injected"
         mock_run.return_value.returncode = 0
-        
+
         intent = adapter.inject_task("Fix bug", "high")
-        
+
         assert intent["status"] == "success"
         assert "id" in intent
         assert intent["output"] == "Task injected"
         mock_run.assert_called_once()
+

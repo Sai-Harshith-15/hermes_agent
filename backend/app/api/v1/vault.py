@@ -9,6 +9,7 @@ from app.models.keys import ApiKeyPool
 from app.models.users import User
 from app.api.deps import get_current_user
 from app.core.vault import encrypt_secret, decrypt_secret, mask_secret
+from app.core.rbac import RequireRole
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,11 @@ async def get_vault_keys(session: AsyncSession = Depends(get_db)) -> List[Dict[s
     return keys
 
 @router.post("/add")
-async def add_vault_key(req: VaultAddRequest, session: AsyncSession = Depends(get_db)):
+async def add_vault_key(
+    req: VaultAddRequest,
+    _user: User = Depends(RequireRole(["owner", "admin"])),
+    session: AsyncSession = Depends(get_db),
+):
     try:
         masked = mask_secret(req.key)
         enc = encrypt_secret(req.key)
@@ -89,6 +94,10 @@ class VaultRotateRequest(BaseModel):
     key_id: str
 
 @router.post("/rotate")
-async def rotate_vault_key(req: VaultRotateRequest, session: AsyncSession = Depends(get_db)):
+async def rotate_vault_key(
+    req: VaultRotateRequest,
+    _user: User = Depends(RequireRole(["owner"])),
+    session: AsyncSession = Depends(get_db),
+):
     return {"status": "success", "message": f"Rotation requested for {req.key_id}"}
 

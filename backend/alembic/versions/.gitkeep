@@ -1,0 +1,8 @@
+# This file ensures the alembic/versions/ directory is tracked by git.
+# Alembic migration files (generated with `alembic revision --autogenerate`)
+# are placed in this directory.
+#
+# To create your first migration:
+#   cd backend
+#   alembic revision --autogenerate -m "initial schema"
+#   alembic upgrade head

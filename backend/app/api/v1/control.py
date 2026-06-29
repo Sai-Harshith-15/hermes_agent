@@ -1,8 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from app.services.hermes.control_adapter import HermesControlAdapter
+from app.core.rbac import RequireRole
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(RequireRole(["owner", "admin"]))])
 adapter = HermesControlAdapter()
 
 class InjectTaskRequest(BaseModel):

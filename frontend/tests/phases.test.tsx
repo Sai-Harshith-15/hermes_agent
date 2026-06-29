@@ -32,13 +32,12 @@ vi.mock('../src/lib/api/sessions_api', () => ({
   }
 }));
 
-vi.mock('../src/lib/api/hermes_api', () => ({
-  hermesApi: {
+vi.mock('../src/lib/api/profiles_api', () => ({
+  profilesApi: {
     getProfiles: vi.fn().mockResolvedValue([
       { agent_name: 'test_agent', system_prompt: 'mock prompt', has_memories: false }
     ]),
-    updateSoul: vi.fn(),
-    updateTaste: vi.fn()
+    updateProfile: vi.fn().mockResolvedValue({ status: 'success' })
   }
 }));
 

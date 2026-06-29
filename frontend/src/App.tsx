@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -207,7 +208,9 @@ export default function AgentCommandCenter() {
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="h-full"
             >
-              <AppRoutes />
+              <ErrorBoundary>
+                <AppRoutes />
+              </ErrorBoundary>
             </motion.div>
           </AnimatePresence>
         </div>

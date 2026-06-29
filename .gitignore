@@ -43,3 +43,12 @@ migrations/versions/*.pyc
 .DS_Store
 Thumbs.db
 tools/
+
+# Hermes Database
+*.db
+hermes_state.db
+hermes_monitor.db
+sqlite.db
+
+# Crash dumps
+*.stackdump

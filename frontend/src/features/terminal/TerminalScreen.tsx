@@ -45,7 +45,9 @@ export function TerminalScreen() {
 
     const connectWs = () => {
       try {
-        const ws = new WebSocket(PTY_WS_URL);
+        const token = localStorage.getItem('hermes_token');
+        const wsUrl = token ? `${PTY_WS_URL}?token=${token}` : PTY_WS_URL;
+        const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
         ws.onopen = () => {
@@ -60,7 +62,10 @@ export function TerminalScreen() {
 
         ws.onclose = () => {
           setIsConnected(false);
-          term.write('\r\n\x1b[31m[Disconnected from Hermes PTY]\x1b[0m\r\n');
+          term.write('\r\n\x1b[33m[Disconnected from Hermes PTY. Reconnecting in 3s...]\x1b[0m\r\n');
+          setTimeout(() => {
+            if (terminalRef.current) connectWs();
+          }, 3000);
         };
 
         ws.onerror = () => {

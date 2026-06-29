@@ -8,6 +8,8 @@ from app.core.security import verify_password, create_access_token, get_password
 from pydantic import BaseModel
 from sqlalchemy import func
 from app.api.deps import get_current_user
+from fastapi import Request
+from app.core.limiter import limiter
 
 router = APIRouter()
 
@@ -32,7 +34,8 @@ async def setup_admin(req: SetupRequest, session: AsyncSession = Depends(get_db)
     return {"status": "success", "message": "Admin user created"}
 
 @router.post("/login")
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(get_db)):
     result = await session.execute(select(User).where(User.username == form_data.username))
     user = result.scalars().first()
     

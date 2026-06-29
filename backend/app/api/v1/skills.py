@@ -133,6 +133,6 @@ async def update_all_skills(background_tasks: BackgroundTasks):
     return {"status": "updating"}
 
 # To not break existing get_skills
-@router.get("/")
+@router.get("")
 def get_skills_legacy() -> List[Dict[str, Any]]:
     return get_local_skills()
