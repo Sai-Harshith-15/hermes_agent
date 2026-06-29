@@ -13,18 +13,11 @@ class ProfileUpdateRequest(BaseModel):
 def get_profiles() -> List[Dict[str, Any]]:
     return adapter.get_profiles()
 
-@router.put("/{agent_name}/soul")
-def update_soul(agent_name: str, req: ProfileUpdateRequest):
-    success = adapter.update_soul(agent_name, req.content)
+@router.put("/{agent_name}/config")
+def update_profile_config(agent_name: str, req: ProfileUpdateRequest):
+    success = adapter.update_profile_config(agent_name, req.content)
     if not success:
-        raise HTTPException(status_code=500, detail="Failed to update soul.md")
-    return {"status": "success"}
-
-@router.put("/{agent_name}/taste")
-def update_taste(agent_name: str, req: ProfileUpdateRequest):
-    success = adapter.update_taste(agent_name, req.content)
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to update taste.md")
+        raise HTTPException(status_code=500, detail="Failed to update config.yaml")
     return {"status": "success"}
 
 @router.get("/config")

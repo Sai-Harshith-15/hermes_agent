@@ -1,20 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Terminal, Bot, 
-  Database, Globe, Settings, Search, Plus, 
-  CheckCircle, Edit3, Save,
-  Tv, Link, Shield, ToggleLeft
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { Edit3, Save, Plus } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { hermesApi } from '../../lib/api/hermes_api';
-import { controlApi } from '../../lib/api/control_api';
-import { fetchApi, getConfigYaml, updateConfigYaml, getEnv, updateEnv, runOp } from '../../lib/api/client';
-const Editor = React.lazy(() => import('@monaco-editor/react'));
+import { profilesApi } from '../../lib/api/profiles_api';
 
 export function ProfilesScreen() {
   const { data: profilesData = [], isLoading } = useQuery({
     queryKey: ['profiles'],
-    queryFn: hermesApi.getProfiles
+    queryFn: profilesApi.getProfiles
   });
   
   const defaultProfiles = profilesData.length > 0 ? profilesData.map((p: any) => ({
@@ -23,21 +15,19 @@ export function ProfilesScreen() {
     role: 'Agent',
     model_route: 'Hermes Default',
     status: 'Idle',
-    soul_content: p.soul_content
+    system_prompt: p.system_prompt,
+    has_memories: p.has_memories
   })) : [
-    { id: 'sess_1', profile_name: 'swe_lead', role: 'Local SWE Supervisor', model_route: 'Ollama: gemma-4-12b', status: 'Idle', soul_content: '', taste_content: '' }
+    { id: 'sess_1', profile_name: 'swe_lead', role: 'Local SWE Supervisor', model_route: 'Ollama: gemma-4-12b', status: 'Idle', system_prompt: '', has_memories: false }
   ];
   
   const [selectedProfile, setSelectedProfile] = useState<any>(defaultProfiles[0]);
-  const [editedSoul, setEditedSoul] = useState('');
-  const [editedTaste, setEditedTaste] = useState('');
+  const [editedConfig, setEditedConfig] = useState('');
   
   const queryClient = useQueryClient();
-  const updateSoulMutation = useMutation({
-    mutationFn: (data: {agentName: string, content: string}) => hermesApi.updateSoul(data.agentName, data.content)
-  });
-  const updateTasteMutation = useMutation({
-    mutationFn: (data: {agentName: string, content: string}) => hermesApi.updateTaste(data.agentName, data.content)
+  const updateConfigMutation = useMutation({
+    mutationFn: (data: {agentName: string, content: string}) =>
+      profilesApi.updateProfile(data.agentName, data.content)
   });
 
   React.useEffect(() => {
@@ -48,15 +38,13 @@ export function ProfilesScreen() {
 
   React.useEffect(() => {
     if (selectedProfile) {
-      setEditedSoul(selectedProfile.soul_content || `You are the ${selectedProfile.role}.`);
-      setEditedTaste(selectedProfile.taste_content || '');
+      setEditedConfig(selectedProfile.system_prompt || `You are the ${selectedProfile.role}.`);
     }
   }, [selectedProfile]);
 
   const handleSave = async () => {
     try {
-      await updateSoulMutation.mutateAsync({ agentName: selectedProfile.profile_name, content: editedSoul });
-      await updateTasteMutation.mutateAsync({ agentName: selectedProfile.profile_name, content: editedTaste });
+      await updateConfigMutation.mutateAsync({ agentName: selectedProfile.profile_name, content: `system_prompt: |\n  ` + editedConfig.split('\n').join('\n  ') });
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
       alert('Profile updated successfully!');
     } catch (e) {
@@ -100,10 +88,10 @@ export function ProfilesScreen() {
           </div>
           <button 
             onClick={handleSave}
-            disabled={updateSoulMutation.isPending || updateTasteMutation.isPending}
+            disabled={updateConfigMutation.isPending}
             className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors flex items-center space-x-2 disabled:opacity-50"
           >
-            <Save size={14}/> <span>{updateSoulMutation.isPending ? 'Saving...' : 'Push to Hermes'}</span>
+            <Save size={14}/> <span>{updateConfigMutation.isPending ? 'Saving...' : 'Push to Hermes'}</span>
           </button>
         </div>
         
@@ -124,26 +112,15 @@ export function ProfilesScreen() {
           </div>
 
           <div className="grid grid-cols-2 gap-6">
-            <div>
+            <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-500 mb-2 flex justify-between">
-                <span>soul.md (System Instructions)</span>
-                <span className="text-emerald-500">MCP Sandbox Active</span>
+                <span>config.yaml (System Prompt)</span>
+                {selectedProfile.has_memories && <span className="text-indigo-400 border border-indigo-400/30 px-2 rounded-full">Has Memories</span>}
               </label>
               <textarea 
                 className="w-full h-64 bg-gray-950 border border-gray-700 rounded-lg p-4 text-sm font-mono text-gray-300 focus:border-emerald-500 outline-none resize-none custom-scrollbar"
-                value={editedSoul}
-                onChange={e => setEditedSoul(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-2 flex justify-between">
-                <span>taste.md (Working Taste & Standards)</span>
-              </label>
-              <textarea 
-                className="w-full h-64 bg-gray-950 border border-gray-700 rounded-lg p-4 text-sm font-mono text-gray-300 focus:border-emerald-500 outline-none resize-none custom-scrollbar"
-                value={editedTaste}
-                onChange={e => setEditedTaste(e.target.value)}
-                placeholder="Write standing instructions, code style, or standards here..."
+                value={editedConfig}
+                onChange={e => setEditedConfig(e.target.value)}
               />
             </div>
           </div>

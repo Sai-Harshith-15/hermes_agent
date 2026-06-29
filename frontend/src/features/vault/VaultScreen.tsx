@@ -10,11 +10,8 @@ export function VaultScreen() {
 
   const fetchVault = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/v1/vault', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) setVaultKeys(await res.json());
+      const data = await vaultApi.getKeys();
+      setVaultKeys(data);
     } catch (err) {
       console.error(err);
     }

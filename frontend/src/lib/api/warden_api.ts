@@ -1,16 +1,19 @@
-import { API_BASE_URL as BASE_URL } from './client';
+import { fetchApi } from './client';
 
 export const wardenApi = {
   getEvents: async () => {
-    const res = await fetch(`${BASE_URL}/warden/events`);
-    return res.json();
+    return fetchApi('/warden/events');
   },
   triggerProbe: async () => {
-    const res = await fetch(`${BASE_URL}/warden/trigger_probe`, { method: 'POST' });
-    return res.json();
+    return fetchApi('/warden/trigger_probe', { method: 'POST' });
   },
   triggerLoopDetection: async () => {
-    const res = await fetch(`${BASE_URL}/warden/trigger_loop_detection`, { method: 'POST' });
-    return res.json();
+    return fetchApi('/warden/trigger_loop_detection', { method: 'POST' });
+  },
+  heal: async (eventId: number, action: string) => {
+    return fetchApi('/warden/heal', {
+      method: 'POST',
+      body: JSON.stringify({ event_id: eventId, action })
+    });
   }
 };

@@ -1,24 +1,33 @@
-import { API_BASE_URL as BASE_URL } from './client';
+import { fetchApi } from './client';
 
 export const sessionsApi = {
   getSessions: async (limit = 50) => {
-    const res = await fetch(`${BASE_URL}/sessions/?limit=${limit}`);
-    if (!res.ok) throw new Error("Failed to fetch sessions");
-    return res.json();
+    return fetchApi(`/sessions/?limit=${limit}`);
   },
   getSessionDetail: async (sessionId: string) => {
-    const res = await fetch(`${BASE_URL}/sessions/${sessionId}`);
-    if (!res.ok) throw new Error("Failed to fetch session detail");
-    return res.json();
+    return fetchApi(`/sessions/${sessionId}`);
   },
-  getMessages: async (sessionId: string) => {
-    const res = await fetch(`${BASE_URL}/sessions/${sessionId}/messages`);
-    if (!res.ok) throw new Error("Failed to fetch messages");
-    return res.json();
+  getMessages: async (sessionId: string, limit = 100) => {
+    return fetchApi(`/sessions/${sessionId}/messages?limit=${limit}`);
   },
   searchSessions: async (query: string) => {
-    const res = await fetch(`${BASE_URL}/sessions/search?q=${encodeURIComponent(query)}`);
-    if (!res.ok) throw new Error("Failed to search sessions");
-    return res.json();
+    return fetchApi(`/sessions/search?q=${encodeURIComponent(query)}`);
+  },
+  editMessage: async (sessionId: string, messageId: string, content: string) => {
+    return fetchApi(`/sessions/${sessionId}/messages/${messageId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content })
+    });
+  },
+  deleteMessage: async (sessionId: string, messageId: string) => {
+    return fetchApi(`/sessions/${sessionId}/messages/${messageId}`, {
+      method: 'DELETE'
+    });
+  },
+  rewindSession: async (sessionId: string, messageId: string, timestamp: string) => {
+    return fetchApi(`/sessions/${sessionId}/rewind`, {
+      method: 'POST',
+      body: JSON.stringify({ message_id: messageId, timestamp })
+    });
   }
 };

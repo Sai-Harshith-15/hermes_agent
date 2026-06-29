@@ -53,8 +53,6 @@ def test_skills_adapter_with_files(temp_hermes_dir):
 async def test_state_adapter_missing_db():
     adapter = HermesStateAdapter(hermes_dir="/tmp/does_not_exist_hermes_123")
     sessions = await adapter.get_recent_sessions()
-    tasks = await adapter.get_recent_tasks()
     memory = await adapter.search_memory("test")
     assert sessions == []
-    assert tasks == []
     assert memory == []

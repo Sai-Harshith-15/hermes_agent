@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Link, Power, PowerOff } from 'lucide-react';
+import { hooksApi } from '../../lib/api/hooks_api';
 
 export function WebhooksScreen() {
   const [webhooks, setWebhooks] = useState<any[]>([]);
@@ -8,11 +9,8 @@ export function WebhooksScreen() {
 
   const fetchWebhooks = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/v1/ops/hooks/webhooks', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) setWebhooks(await res.json());
+      const data = await hooksApi.getWebhooks();
+      setWebhooks(data);
     } catch (err) {
       console.error(err);
     }
@@ -25,13 +23,7 @@ export function WebhooksScreen() {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/v1/ops/hooks/webhooks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(newHook)
-      });
-      const data = await res.json();
+      const data = await hooksApi.createWebhook(newHook);
       alert(`Created! Your one-time HMAC secret is:\n\n${data.one_time_secret}\n\nPlease save this, you will not see it again.`);
       setShowAdd(false);
       setNewHook({ name: '', target_url: '', event_filter: '*' });
@@ -43,11 +35,7 @@ export function WebhooksScreen() {
 
   const toggleWebhook = async (id: string) => {
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`/api/v1/ops/hooks/webhooks/${id}/toggle`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await hooksApi.toggleWebhook(id);
       fetchWebhooks();
     } catch (err) {
       console.error(err);

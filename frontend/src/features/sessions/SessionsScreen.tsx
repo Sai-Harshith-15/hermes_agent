@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, Search, Clock, Cpu, Code2, Pause, Play, Trash2, Send } from 'lucide-react';
+import { Bot, Search, Clock, Cpu, Code2, Pause, Play, Trash2, Send, Edit2, RotateCcw } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { sessionsApi } from '../../lib/api/sessions_api';
 import { controlApi } from '../../lib/api/control_api';
@@ -10,6 +10,8 @@ export function SessionsScreen() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [taskInput, setTaskInput] = useState('');
   const [showKillConfirm, setShowKillConfirm] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState('');
 
   const { data: liveSessions = [], isLoading } = useQuery({
     queryKey: ['sessions', searchQuery],
@@ -53,6 +55,37 @@ export function SessionsScreen() {
       setTaskInput('');
     } catch (e) {
       toast.error(`Failed to inject task: ${e}`);
+    }
+  };
+
+  const handleDeleteMessage = async (msgId: string) => {
+    if (!selectedSessionId) return;
+    try {
+      await sessionsApi.deleteMessage(selectedSessionId, msgId);
+      toast.success("Message deleted");
+    } catch (e) {
+      toast.error("Failed to delete message");
+    }
+  };
+
+  const handleEditMessage = async (msgId: string) => {
+    if (!selectedSessionId) return;
+    try {
+      await sessionsApi.editMessage(selectedSessionId, msgId, editContent);
+      toast.success("Message updated");
+      setEditingMessageId(null);
+    } catch (e) {
+      toast.error("Failed to update message");
+    }
+  };
+
+  const handleRewind = async (msgId: string, timestamp: string) => {
+    if (!selectedSessionId) return;
+    try {
+      await sessionsApi.rewindSession(selectedSessionId, msgId, timestamp);
+      toast.success("Agent rewound to timestamp");
+    } catch (e) {
+      toast.error("Failed to rewind session");
     }
   };
 
@@ -206,15 +239,36 @@ export function SessionsScreen() {
                   }
 
                   return (
-                    <div key={i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                    <div key={i} className={`flex flex-col group ${isUser ? 'items-end' : 'items-start'}`}>
                       <div className={`
-                        max-w-[80%] p-4 text-sm shadow-md leading-relaxed
+                        max-w-[80%] p-4 text-sm shadow-md leading-relaxed relative
                         ${isUser 
                           ? 'bg-blue-600 border border-blue-500 text-white rounded-2xl rounded-tr-sm' 
                           : 'bg-gray-800 border border-gray-700 text-gray-200 rounded-2xl rounded-tl-sm'
                         }
                       `}>
-                        {msg.content}
+                        {editingMessageId === i ? (
+                          <div className="flex flex-col gap-2">
+                            <textarea 
+                              className="bg-gray-900 border border-gray-700 text-gray-200 w-full rounded p-2 custom-scrollbar min-h-[100px]"
+                              value={editContent}
+                              onChange={e => setEditContent(e.target.value)}
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => setEditingMessageId(null)} className="text-xs text-gray-400 hover:text-white">Cancel</button>
+                              <button onClick={() => handleEditMessage(i.toString())} className="text-xs bg-emerald-600 text-white px-2 py-1 rounded">Save</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {msg.content}
+                            <div className={`absolute top-2 ${isUser ? 'left-[-80px]' : 'right-[-80px]'} hidden group-hover:flex gap-1`}>
+                              <button onClick={() => { setEditingMessageId(i); setEditContent(msg.content); }} className="p-1.5 bg-gray-800 text-gray-400 hover:text-white rounded" title="Edit Message"><Edit2 size={12} /></button>
+                              <button onClick={() => handleDeleteMessage(i.toString())} className="p-1.5 bg-gray-800 text-red-400 hover:text-red-300 rounded" title="Delete Message"><Trash2 size={12} /></button>
+                              <button onClick={() => handleRewind(i.toString(), msg.timestamp)} className="p-1.5 bg-gray-800 text-amber-400 hover:text-amber-300 rounded" title="Rewind to Here"><RotateCcw size={12} /></button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   );

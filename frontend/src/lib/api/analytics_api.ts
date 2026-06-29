@@ -1,5 +1,10 @@
 import { fetchApi } from './client';
 
 export const analyticsApi = {
-  // Add analytics endpoints here
+  getDaily: async () => {
+    return fetchApi('/analytics/daily');
+  },
+  getSummary: async () => {
+    return fetchApi('/telemetry/analytics');
+  }
 };

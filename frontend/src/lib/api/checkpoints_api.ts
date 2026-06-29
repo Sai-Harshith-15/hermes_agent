@@ -1,5 +1,10 @@
 import { fetchApi } from './client';
 
 export const checkpointsApi = {
-  // Add checkpoints endpoints here
+  getCheckpoints: async () => {
+    return fetchApi('/ops/checkpoints');
+  },
+  pruneCheckpoint: async (filename: string) => {
+    return fetchApi(`/ops/checkpoints/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+  }
 };

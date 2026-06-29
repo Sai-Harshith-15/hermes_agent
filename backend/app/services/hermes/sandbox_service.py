@@ -1,59 +1,39 @@
+import os
 import subprocess
-import json
-from typing import List, Dict, Any
+import asyncio
+from pathlib import Path
 
-class HermesSandboxService:
-    def __init__(self, container_name: str = "hermes_agent_sandbox"):
-        self.container_name = container_name
-
-    def list_files(self, relative_dir: str = "/") -> List[Dict[str, Any]]:
-        if not relative_dir:
-            relative_dir = "/"
+class SandboxService:
+    def __init__(self, workspace_dir: str = "~/workspace"):
+        self.workspace_dir = Path(os.path.expanduser(workspace_dir))
+        
+    def get_git_diff(self) -> str:
+        if not self.workspace_dir.exists():
+            return "Workspace directory does not exist."
+            
         try:
-            import shlex
-            safe_dir = shlex.quote(relative_dir)
-            cmd = ["docker", "exec", self.container_name, "sh", "-c", f"ls -la {safe_dir} | awk 'NR>1 {{print $1, $5, $9}}'"]
-            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
-            result = []
-            for line in output.strip().split('\n'):
-                if not line: continue
-                parts = line.split(maxsplit=2)
-                if len(parts) == 3:
-                    perms, size, name = parts
-                    if name in ('.', '..'): continue
-                    is_dir = perms.startswith('d')
-                    result.append({
-                        "name": name,
-                        "path": f"{relative_dir.rstrip('/')}/{name}",
-                        "is_dir": is_dir,
-                        "size": int(size) if size.isdigit() else 0
-                    })
-            result.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
-            return result
-        except subprocess.CalledProcessError as e:
-            raise FileNotFoundError(f"Directory not found or docker error: {e.output}")
-
-    def read_file(self, relative_path: str) -> str:
-        try:
-            cmd = ["docker", "exec", self.container_name, "cat", relative_path]
-            return subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
-        except subprocess.CalledProcessError as e:
-            raise FileNotFoundError(f"File not found or docker error: {e.output}")
-
-    def write_file(self, relative_path: str, content: str) -> bool:
-        try:
-            import shlex
-            safe_path = shlex.quote(relative_path)
-            process = subprocess.Popen(
-                ["docker", "exec", "-i", self.container_name, "sh", "-c", f"cat > {safe_path}"],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
+            result = subprocess.run(
+                ["git", "diff"],
+                cwd=str(self.workspace_dir),
+                capture_output=True,
+                text=True,
+                check=True
             )
-            stdout, stderr = process.communicate(input=content)
-            if process.returncode != 0:
-                raise ValueError(f"Docker write error: {stderr}")
-            return True
+            return result.stdout
+        except subprocess.CalledProcessError as e:
+            return f"Git diff failed: {e.stderr}"
         except Exception as e:
-            raise ValueError(f"Failed to write file: {str(e)}")
+            return f"Error running git diff: {str(e)}"
+            
+    async def get_pty_bridge(self, container_id: str):
+        """
+        Creates a bridge to a docker container's PTY.
+        In a real implementation, this would connect via docker exec -it.
+        """
+        process = await asyncio.create_subprocess_shell(
+            f"docker exec -it {container_id} /bin/bash",
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        return process

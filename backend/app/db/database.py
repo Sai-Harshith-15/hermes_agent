@@ -3,6 +3,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
 from app.core.config import settings
+from sqlalchemy import event
+from sqlalchemy.engine.interfaces import DBAPIConnection
 
 engine = create_async_engine(
     settings.DATABASE_URL,
@@ -14,6 +16,13 @@ engine = create_async_engine(
 async_session_maker = sessionmaker(
     engine, class_=AsyncSession, expire_on_commit=False
 )
+
+@event.listens_for(engine.sync_engine, "connect")
+def set_sqlite_pragma(dbapi_connection: DBAPIConnection, connection_record):
+    if "sqlite" in settings.DATABASE_URL:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL;")
+        cursor.close()
 
 async def get_db():
     async with async_session_maker() as session:

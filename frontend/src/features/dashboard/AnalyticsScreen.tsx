@@ -4,8 +4,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { Activity, Database, DollarSign } from 'lucide-react';
-
-const API_BASE = '/api/v1'; // Assuming default fastapi port for standalone requests, or we use our api client
+import { analyticsApi } from '../../lib/api/analytics_api';
 
 export function AnalyticsScreen() {
   const [data, setData] = useState<any[]>([]);
@@ -15,15 +14,8 @@ export function AnalyticsScreen() {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_BASE}/analytics/daily`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (!res.ok) throw new Error('Failed to fetch analytics');
-        const json = await res.json();
-        setData(json);
+        const data = await analyticsApi.getDaily();
+        setData(data);
       } catch (err: any) {
         setError(err.message);
       } finally {

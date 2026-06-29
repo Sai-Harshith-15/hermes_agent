@@ -5,6 +5,7 @@ router = APIRouter()
 
 # Stub since Agents data comes partly from telemetry DB and partly from config/state.
 from app.services.hermes.state_adapter import HermesStateAdapter
+from app.services.hermes.kanban_adapter import KanbanAdapter
 
 @router.get("/")
 async def get_agents() -> List[Dict[str, Any]]:
@@ -23,5 +24,12 @@ async def get_agents() -> List[Dict[str, Any]]:
                 "last_active": sess.get("created_at")
             }
     
-    # In a full implementation, we'd also merge kanban tasks here if kanban.db adapter exists
+    # Merge kanban tasks here if kanban.db adapter exists
+    kanban_adapter = KanbanAdapter()
+    tasks = await kanban_adapter.get_tasks(limit=50)
+    for task in tasks:
+        agent_name = task.get("assignee")
+        if agent_name and agent_name in agents_map:
+            agents_map[agent_name]["task"] = task.get("title", agents_map[agent_name]["task"])
+            
     return list(agents_map.values())

@@ -1,5 +1,7 @@
 import { fetchApi } from './client';
 
 export const pluginsApi = {
-  // Add plugins endpoints here
+  getPlugins: async () => {
+    return fetchApi('/plugins/manifests');
+  }
 };

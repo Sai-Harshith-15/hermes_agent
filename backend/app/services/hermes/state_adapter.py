@@ -11,8 +11,9 @@ class HermesStateAdapter:
     async def _execute_query(self, query: str, params: tuple = ()) -> List[Dict[str, Any]]:
         if not self.db_path.exists():
             return []
-        db_uri = f"file:{self.db_path}?mode=ro"
+        db_uri = f"file:{self.db_path}"
         async with aiosqlite.connect(db_uri, uri=True) as db:
+            await db.execute("PRAGMA journal_mode=WAL;")
             db.row_factory = aiosqlite.Row
             async with db.execute(query, params) as cursor:
                 rows = await cursor.fetchall()

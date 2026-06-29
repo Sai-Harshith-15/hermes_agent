@@ -1,36 +1,16 @@
-import { API_BASE_URL as BASE_URL } from './client';
+import { fetchApi } from './client';
 
 export const hermesApi = {
   getTasks: async () => {
-    const res = await fetch(`${BASE_URL}/kanban/tasks`);
-    return res.json();
+    return fetchApi('/kanban/tasks');
   },
   getSkills: async () => {
-    const res = await fetch(`${BASE_URL}/skills/`);
-    return res.json();
+    return fetchApi('/skills/');
   },
   searchMemory: async (query: string) => {
-    const res = await fetch(`${BASE_URL}/memory/search?q=${encodeURIComponent(query)}`);
-    return res.json();
+    return fetchApi(`/memory/search?q=${encodeURIComponent(query)}`);
   },
   getProfiles: async () => {
-    const res = await fetch(`${BASE_URL}/profiles/`);
-    return res.json();
-  },
-  updateSoul: async (agentName: string, content: string) => {
-    const res = await fetch(`${BASE_URL}/profiles/${agentName}/soul`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content })
-    });
-    return res.json();
-  },
-  updateTaste: async (agentName: string, content: string) => {
-    const res = await fetch(`${BASE_URL}/profiles/${agentName}/taste`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content })
-    });
-    return res.json();
+    return fetchApi('/profiles/');
   }
 };

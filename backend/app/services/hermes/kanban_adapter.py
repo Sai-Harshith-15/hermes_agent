@@ -11,8 +11,9 @@ class KanbanAdapter:
     async def _execute_query(self, query: str, params: tuple = ()) -> List[Dict[str, Any]]:
         if not self.db_path.exists():
             return []
-        db_uri = f"file:{self.db_path}?mode=ro"
+        db_uri = f"file:{self.db_path}"
         async with aiosqlite.connect(db_uri, uri=True) as db:
+            await db.execute("PRAGMA journal_mode=WAL;")
             db.row_factory = aiosqlite.Row
             async with db.execute(query, params) as cursor:
                 rows = await cursor.fetchall()
@@ -31,3 +32,16 @@ class KanbanAdapter:
             return await self._execute_query(query, (limit,))
         except Exception:
             return []
+
+    async def update_task_status(self, task_id: str, new_status: str) -> bool:
+        if not self.db_path.exists():
+            return False
+        db_uri = f"file:{self.db_path}"
+        try:
+            async with aiosqlite.connect(db_uri, uri=True) as db:
+                await db.execute("PRAGMA journal_mode=WAL;")
+                await db.execute("UPDATE tasks SET status = ? WHERE id = ?", (new_status, task_id))
+                await db.commit()
+            return True
+        except Exception:
+            return False

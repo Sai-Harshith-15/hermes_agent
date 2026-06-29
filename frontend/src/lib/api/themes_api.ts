@@ -1,5 +1,7 @@
 import { fetchApi } from './client';
 
 export const themesApi = {
-  // Add themes endpoints here
+  getThemes: async () => {
+    return fetchApi('/messaging/themes');
+  }
 };

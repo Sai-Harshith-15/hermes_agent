@@ -4,11 +4,19 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { sendAdminIntervention } from '../../lib/api/client';
 import { sandboxApi } from '../../lib/api/sandbox_api';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { Terminal as XTerminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import { WebglAddon } from '@xterm/addon-webgl';
+import '@xterm/xterm/css/xterm.css';
 
 export function SandboxScreen() {
   const { logs } = useSettingsStore();
   const [chatInput, setChatInput] = useState('');
   const logEndRef = useRef<HTMLDivElement>(null);
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const xtermRef = useRef<XTerminal | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const [terminalError, setTerminalError] = useState<string | null>(null);
   
   const [currentPath, setCurrentPath] = useState('');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -46,8 +54,73 @@ export function SandboxScreen() {
   };
 
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [logs]);
+    if (!terminalRef.current) return;
+
+    const term = new XTerminal({
+      cursorBlink: true,
+      theme: {
+        background: '#030712', // gray-950
+        foreground: '#10b981', // emerald-500
+        cursor: '#10b981',
+      },
+      fontFamily: '"Fira Code", monospace',
+      fontSize: 12,
+    });
+    
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+    
+    term.open(terminalRef.current);
+    
+    try {
+      const webglAddon = new WebglAddon();
+      term.loadAddon(webglAddon);
+    } catch (e) {
+      console.warn('WebGL addon could not be loaded');
+    }
+
+    fitAddon.fit();
+    xtermRef.current = term;
+
+    const wsUrl = (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + (window.location.hostname || 'localhost') + ':8000/api/v1/sandbox/ws/terminal';
+    
+    try {
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setTerminalError(null);
+      };
+
+      ws.onmessage = (event) => {
+        term.write(event.data);
+      };
+
+      ws.onclose = () => {
+        term.write('\r\n\x1b[31m[Disconnected from Sandbox PTY]\x1b[0m\r\n');
+      };
+
+      term.onData((data) => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(data);
+        }
+      });
+    } catch (err) {
+      setTerminalError('Failed to connect to PTY.');
+    }
+
+    const handleResize = () => {
+      fitAddon.fit();
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (wsRef.current) wsRef.current.close();
+      term.dispose();
+    };
+  }, []);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,12 +203,23 @@ export function SandboxScreen() {
             {loadFileMutation.isPending ? (
               <div className="absolute inset-0 flex items-center justify-center text-gray-500 font-mono text-sm">Loading...</div>
             ) : selectedFile ? (
-              <textarea 
-                value={fileContent}
-                onChange={(e) => setFileContent(e.target.value)}
-                className="w-full h-full bg-transparent text-gray-300 font-mono text-sm p-4 outline-none resize-none custom-scrollbar"
-                spellCheck={false}
-              />
+              <React.Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-gray-500 font-mono text-sm">Loading Editor...</div>}>
+                <Editor
+                  height="100%"
+                  language="javascript"
+                  theme="vs-dark"
+                  value={fileContent}
+                  onChange={(value) => setFileContent(value || '')}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    wordWrap: 'on',
+                    scrollBeyondLastLine: false,
+                    smoothScrolling: true,
+                    padding: { top: 16 }
+                  }}
+                />
+              </React.Suspense>
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-gray-500 font-mono text-sm">Select a file to edit</div>
             )}
@@ -143,21 +227,15 @@ export function SandboxScreen() {
         </div>
 
         {/* Terminal Area */}
-        <div className="h-48 bg-black rounded-xl border border-gray-800 flex flex-col font-mono text-sm overflow-hidden relative shadow-inner shrink-0">
+        <div className="h-48 bg-gray-950 rounded-xl border border-gray-800 flex flex-col font-mono text-sm overflow-hidden relative shadow-inner shrink-0">
           <div className="bg-gray-900 border-b border-gray-800 p-2 flex items-center justify-between text-gray-400 text-xs shrink-0">
             <div className="flex items-center space-x-2">
               <Terminal size={14} />
-              <span>hermes_agent_container | Live Websocket Logs</span>
+              <span>Sandbox PTY Bridge</span>
+              {terminalError && <span className="text-red-400 ml-4">{terminalError}</span>}
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar text-emerald-400">
-            {logs.map((log, i) => (
-              <div key={i} className={`${log.log_level === 'ERROR' ? 'text-red-400' : log.log_level === 'WARNING' ? 'text-amber-400' : ''}`}>
-                <span>[{new Date(log.timestamp || Date.now()).toLocaleTimeString()}]</span> <span className="text-gray-400">{log.source}</span> {log.message}
-              </div>
-            ))}
-            <div ref={logEndRef} />
-          </div>
+          <div className="flex-1 p-2 overflow-hidden" ref={terminalRef}></div>
         </div>
       </div>
 

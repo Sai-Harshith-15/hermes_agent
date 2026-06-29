@@ -1,26 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Terminal, Bot, 
-  Database, Globe, Settings, Search, Plus, 
-  CheckCircle, Edit3, Save,
-  Tv, Link, Shield, ToggleLeft
+  Bot, 
+  Plus
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { hermesApi } from '../../lib/api/hermes_api';
-import { controlApi } from '../../lib/api/control_api';
-import { fetchApi, getConfigYaml, updateConfigYaml, getEnv } from '../../lib/api/client';
+import { skillsApi } from '../../lib/api/skills_api';
 
 export function SkillsScreen() {
   const { data: skills = [], isLoading } = useQuery({
     queryKey: ['skills'],
-    queryFn: hermesApi.getSkills
+    queryFn: skillsApi.getSkills
   });
 
   const [curatorStatus, setCuratorStatus] = useState<string>('unknown');
 
   const loadCuratorStatus = async () => {
     try {
-      const data = await fetchApi('/skills/curator');
+      const data = await skillsApi.getCuratorStatus();
       setCuratorStatus(data.status);
     } catch(err) {}
   };
@@ -54,7 +50,7 @@ export function SkillsScreen() {
   const toggleCurator = async () => {
     const action = curatorStatus === 'running' ? 'pause' : 'resume';
     try {
-      await fetchApi(`/skills/curator/toggle?action=${action}`, { method: 'POST' });
+      await skillsApi.toggleCurator(action as 'pause' | 'resume');
       await loadCuratorStatus();
     } catch(err: any) {
       alert(`Failed to toggle curator: ${err.message}`);
@@ -65,23 +61,17 @@ export function SkillsScreen() {
     if (!installId) return;
     setLogs('');
     setShowLogs(true);
-    await fetchApi('/skills/install', {
-      method: 'POST',
-      body: JSON.stringify({ skill_id: installId })
-    });
+    await skillsApi.installSkill(installId);
   };
 
   const handleUpdateAll = async () => {
     setLogs('');
     setShowLogs(true);
-    await fetchApi('/skills/update-all', { method: 'POST' });
+    await skillsApi.updateAll();
   };
 
   const toggleSkill = async (skillId: string, enabled: boolean) => {
-    await fetchApi('/skills/toggle', {
-      method: 'POST',
-      body: JSON.stringify({ skill_id: skillId, enabled: !enabled })
-    });
+    await skillsApi.toggleSkill(skillId, !enabled);
     queryClient.invalidateQueries({ queryKey: ['skills'] });
   };
 

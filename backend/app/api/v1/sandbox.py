@@ -1,40 +1,39 @@
-from fastapi import APIRouter, HTTPException, Query, Depends
-from pydantic import BaseModel
-from app.services.hermes.sandbox_service import HermesSandboxService
-from typing import List, Dict, Any
-from app.core.rbac import RequireRole
+from fastapi import APIRouter, WebSocket
+from typing import Dict, Any
+from app.services.hermes.sandbox_service import SandboxService
+import asyncio
 
 router = APIRouter()
-sandbox_service = HermesSandboxService()
+sandbox_svc = SandboxService()
 
-class FileUpdateRequest(BaseModel):
-    content: str
+@router.get("/diff")
+def get_sandbox_diff() -> Dict[str, Any]:
+    diff = sandbox_svc.get_git_diff()
+    return {"diff": diff}
 
-@router.get("/files")
-def list_files(path: str = "") -> List[Dict[str, Any]]:
+@router.websocket("/ws/terminal")
+async def websocket_terminal(websocket: WebSocket, container_id: str = "hermes-agent"):
+    await websocket.accept()
+    process = await sandbox_svc.get_pty_bridge(container_id)
+    
+    async def read_stdout():
+        while True:
+            data = await process.stdout.read(1024)
+            if not data:
+                break
+            await websocket.send_text(data.decode())
+            
+    async def write_stdin():
+        while True:
+            data = await websocket.receive_text()
+            process.stdin.write(data.encode())
+            await process.stdin.drain()
+            
     try:
-        return sandbox_service.list_files(path)
-    except ValueError as e:
-        raise HTTPException(status_code=403, detail=str(e))
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-
-@router.get("/file")
-def read_file(path: str = Query(..., description="Path to the file to read")):
-    try:
-        content = sandbox_service.read_file(path)
-        return {"content": content}
-    except ValueError as e:
-        raise HTTPException(status_code=403, detail=str(e))
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-
-@router.put("/file")
-def write_file(path: str, req: FileUpdateRequest):
-    try:
-        success = sandbox_service.write_file(path, req.content)
-        if not success:
-            raise HTTPException(status_code=500, detail="Failed to write file")
-        return {"status": "success"}
-    except ValueError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+        await asyncio.gather(read_stdout(), write_stdin())
+    except Exception:
+        pass
+    finally:
+        if process.returncode is None:
+            process.terminate()
+        await websocket.close()

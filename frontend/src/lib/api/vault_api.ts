@@ -1,6 +1,9 @@
 import { API_BASE_URL as BASE_URL, fetchApi } from './client';
 
 export const vaultApi = {
+  getKeys: async () => {
+    return fetchApi('/vault');
+  },
   addKey: async (provider: string, key: string) => {
     return fetchApi('/vault/add', {
       method: 'POST',

@@ -25,3 +25,14 @@ async def trigger_loop_detection():
     import asyncio
     asyncio.create_task(detect_loops())
     return {"status": "Loop detection triggered"}
+
+from pydantic import BaseModel
+class HealPayload(BaseModel):
+    event_id: int
+    action: str
+
+@router.post("/heal")
+async def trigger_healing(payload: HealPayload):
+    from app.services.warden.healer import apply_healing_action
+    result = await apply_healing_action(payload.event_id, payload.action)
+    return result

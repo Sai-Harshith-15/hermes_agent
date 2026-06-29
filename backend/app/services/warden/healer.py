@@ -1,4 +1,5 @@
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +25,22 @@ async def apply_healing_action(event_id: int, action: str):
                 await session.commit()
                 return {"status": "success", "action": "Key Disabled"}
         elif action == "Pause Agent" and event.agent_ref:
-            # Here we would interface with control_adapter to stop the container
-            event.action_taken = "Agent Paused"
+            # Interface with Docker CLI to pause/restart the container
+            # In a real setup we might just restart the container to unstick it
+            try:
+                process = await asyncio.create_subprocess_shell(
+                    f"docker restart {event.agent_ref}",
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await process.communicate()
+                if process.returncode == 0:
+                    event.action_taken = "Agent Restarted via Docker"
+                else:
+                    event.action_taken = f"Docker Restart Failed: {stderr.decode()}"
+            except Exception as e:
+                event.action_taken = f"Docker Error: {str(e)}"
             await session.commit()
-            return {"status": "success", "action": "Agent Paused"}
+            return {"status": "success", "action": event.action_taken}
             
     return {"status": "success", "action": action}

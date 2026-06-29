@@ -25,6 +25,13 @@ export function WardenScreen() {
     }
   });
 
+  const healMutation = useMutation({
+    mutationFn: ({ eventId, action }: { eventId: number; action: string }) => wardenApi.heal(eventId, action),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['wardenEvents'] });
+    }
+  });
+
   return (
     <div className="max-w-5xl space-y-6">
       <div className="flex justify-between items-end mb-6">
@@ -83,7 +90,22 @@ export function WardenScreen() {
                   </td>
                   <td className="px-6 py-4 font-mono">{event.key_ref ? `Key ID: ${event.key_ref}` : event.agent_ref ? `Agent: ${event.agent_ref}` : 'System'}</td>
                   <td className="px-6 py-4 text-gray-300 max-w-xs truncate" title={event.reasoning}>{event.reasoning}</td>
-                  <td className="px-6 py-4 text-gray-300">{event.action_taken}</td>
+                  <td className="px-6 py-4 text-gray-300">
+                    {event.action_taken === "Suggested Key Rotation" || event.action_taken === "Pause Agent" ? (
+                      <div className="flex items-center space-x-2">
+                        <span>{event.action_taken}</span>
+                        <button
+                          onClick={() => healMutation.mutate({ eventId: event.id, action: event.action_taken })}
+                          disabled={healMutation.isPending}
+                          className="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded text-xs font-bold transition-colors"
+                        >
+                          Approve Heal
+                        </button>
+                      </div>
+                    ) : (
+                      event.action_taken
+                    )}
+                  </td>
                 </tr>
               ))
             )}

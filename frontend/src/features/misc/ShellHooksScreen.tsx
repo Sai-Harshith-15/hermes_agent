@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TerminalSquare, ShieldAlert, Plus, Trash2 } from 'lucide-react';
-import { fetchApi } from '../../lib/api/client';
+import { hooksApi } from '../../lib/api/hooks_api';
 
 interface ShellHook {
   event: string;
@@ -20,7 +20,7 @@ export function ShellHooksScreen() {
   const loadHooks = async () => {
     setLoading(true);
     try {
-      const data = await fetchApi('/ops/hooks');
+      const data = await hooksApi.getShellHooks();
       setHooks(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load shell hooks');
@@ -36,7 +36,7 @@ export function ShellHooksScreen() {
   const handleDelete = async (event: string) => {
     if (!window.confirm(`Delete hook for event: ${event}?`)) return;
     try {
-      await fetchApi(`/ops/hooks/${event}`, { method: 'DELETE' });
+      await hooksApi.deleteShellHook(event);
       await loadHooks();
     } catch (err: any) {
       alert(`Failed to delete: ${err.message}`);
@@ -50,10 +50,7 @@ export function ShellHooksScreen() {
       return;
     }
     try {
-      await fetchApi('/ops/hooks', {
-        method: 'POST',
-        body: JSON.stringify(newHook)
-      });
+      await hooksApi.createShellHook(newHook);
       setNewHook({ event: '', command: '', matcher: '', timeout: 30 });
       setConsentGranted(false);
       await loadHooks();

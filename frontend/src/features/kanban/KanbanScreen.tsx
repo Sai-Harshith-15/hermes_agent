@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, TerminalSquare } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { kanbanApi } from '../../lib/api/kanban_api';
 import { fetchApi } from '../../lib/api/client';
 
 export function KanbanScreen() {
@@ -9,8 +10,8 @@ export function KanbanScreen() {
 
   const loadTasks = async () => {
     try {
-      const data = await fetchApi('/dashboard/state');
-      setTasks(data.tasks || []);
+      const data = await kanbanApi.getTasks();
+      setTasks(data || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -37,10 +38,7 @@ export function KanbanScreen() {
     const task = tasks.find(t => t.id === draggableId);
     if (task) {
       try {
-        await fetchApi('/telemetry/task', {
-          method: 'POST',
-          body: JSON.stringify({ ...task, status: newStatus })
-        });
+        await kanbanApi.updateTaskStatus(task.id, newStatus);
       } catch (err) {
         // Rollback
         loadTasks();

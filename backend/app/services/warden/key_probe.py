@@ -18,6 +18,12 @@ async def probe_key(key: ApiKeyPool) -> dict:
                 res = await client.get("https://api.openai.com/v1/models", headers={"Authorization": f"Bearer {real_key}"})
             elif key.provider.lower() == "anthropic":
                 res = await client.get("https://api.anthropic.com/v1/models", headers={"x-api-key": real_key, "anthropic-version": "2023-06-01"})
+            elif key.provider.lower() == "openrouter":
+                res = await client.get("https://openrouter.ai/api/v1/models", headers={"Authorization": f"Bearer {real_key}"})
+            elif key.provider.lower() == "groq":
+                res = await client.get("https://api.groq.com/openai/v1/models", headers={"Authorization": f"Bearer {real_key}"})
+            elif key.provider.lower() == "google":
+                res = await client.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={real_key}")
             else:
                 return {"status": "ok", "severity": "INFO", "reasoning": "Unsupported provider probe"}
                 
@@ -26,8 +32,13 @@ async def probe_key(key: ApiKeyPool) -> dict:
             elif res.status_code == 429:
                 return {"status": "rate-limited", "severity": "WARNING", "reasoning": "429 Too Many Requests - Rate limited"}
             
+            # Check rate limits if headers exist
+            rl_rem = res.headers.get("x-ratelimit-remaining-requests") or res.headers.get("x-ratelimit-remaining")
+            if rl_rem and rl_rem.isdigit() and int(rl_rem) < 10:
+                 return {"status": "warning", "severity": "WARNING", "reasoning": f"Low RPM remaining: {rl_rem}"}
+
             return {"status": "ok", "severity": "INFO", "reasoning": "200 OK - Probe successful"}
-    except Exception as e:
+    except httpx.RequestError as e:
         return {"status": "error", "severity": "CRITICAL", "reasoning": f"Connection error: {str(e)}"}
 
 async def probe_all_keys():

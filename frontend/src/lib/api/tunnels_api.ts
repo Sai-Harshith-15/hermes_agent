@@ -1,5 +1,7 @@
 import { fetchApi } from './client';
 
 export const tunnelsApi = {
-  // Add tunnels endpoints here
+  getTunnelUrl: async () => {
+    return fetchApi('/tunnels/url');
+  }
 };

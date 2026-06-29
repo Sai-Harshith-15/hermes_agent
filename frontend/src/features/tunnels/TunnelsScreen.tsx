@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Globe, CheckCircle } from 'lucide-react';
-import { fetchApi } from '../../lib/api/client';
+import { tunnelsApi } from '../../lib/api/tunnels_api';
 
 export function TunnelsScreen() {
   const [tunnels, setTunnels] = useState<any[]>([
@@ -9,7 +9,7 @@ export function TunnelsScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchApi('/tunnels/url')
+    tunnelsApi.getTunnelUrl()
       .then(res => {
         if (res.url) {
           setTunnels(prev => [
