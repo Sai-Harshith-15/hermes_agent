@@ -10,20 +10,20 @@ from app.models import (
 router = APIRouter()
 
 @router.get("/state")
-async def get_dashboard_state(session: AsyncSession = Depends(get_db)):
+async def get_dashboard_state(limit: int = 100, offset: int = 0, session: AsyncSession = Depends(get_db)):
     result = await session.execute(select(HostMetrics).order_by(HostMetrics.timestamp.desc()).limit(1))
     host_metrics = result.scalars().first()
     
-    result = await session.execute(select(ApiKeyPool))
+    result = await session.execute(select(ApiKeyPool).offset(offset).limit(limit))
     keys = result.scalars().all()
     
-    result = await session.execute(select(AgentRuns))
+    result = await session.execute(select(AgentRuns).offset(offset).limit(limit))
     runs = result.scalars().all()
     
-    result = await session.execute(select(Tasks))
+    result = await session.execute(select(Tasks).offset(offset).limit(limit))
     tasks = result.scalars().all()
     
-    result = await session.execute(select(AgentLogs).order_by(AgentLogs.timestamp.desc()).limit(100))
+    result = await session.execute(select(AgentLogs).order_by(AgentLogs.timestamp.desc()).offset(offset).limit(limit))
     logs = result.scalars().all()
     
     return {

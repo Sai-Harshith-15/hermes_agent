@@ -6,26 +6,29 @@ from app.core.config import settings
 
 router = APIRouter()
 
-def execute_command(cmd: str) -> str:
+async def execute_command(cmd: str) -> str:
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
-        return result.stdout + "\n" + result.stderr
+        process = await asyncio.create_subprocess_shell(
+            cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        return (stdout.decode() if stdout else "") + "\n" + (stderr.decode() if stderr else "")
     except Exception as e:
         return str(e)
 
 @router.post("/doctor")
-def run_doctor():
-    logs = execute_command("hermes doctor")
+async def run_doctor():
+    logs = await execute_command("hermes doctor")
     return {"status": "success", "logs": logs or "Executed hermes doctor."}
 
 @router.post("/audit")
-def run_audit():
-    logs = execute_command("hermes audit")
+async def run_audit():
+    logs = await execute_command("hermes audit")
     return {"status": "success", "logs": logs or "Executed hermes audit."}
 
 @router.post("/backup")
-def run_backup():
-    logs = execute_command("hermes backup")
+async def run_backup():
+    logs = await execute_command("hermes backup")
     return {"status": "success", "logs": logs or "Executed hermes backup."}
 
 @router.websocket("/ws")

@@ -26,6 +26,6 @@ async def detect_loops():
                     action_taken="Suggested Steer or Pause"
                 )
                 session.add(event)
-                fire_webhook(event)
+                await fire_webhook(event)
         await session.commit()
     logger.info("Warden completed loop detection cycle.")

@@ -84,7 +84,7 @@ export function SandboxScreen() {
     fitAddon.fit();
     xtermRef.current = term;
 
-    const wsUrl = (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + (window.location.hostname || 'localhost') + ':8000/api/v1/sandbox/ws/terminal';
+    const wsUrl = import.meta.env.VITE_PTY_WS_URL || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api/v1/sandbox/ws/terminal`;
     
     try {
       const ws = new WebSocket(wsUrl);

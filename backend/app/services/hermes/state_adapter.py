@@ -125,6 +125,15 @@ class HermesStateAdapter:
             return False
 
     async def rewind_session(self, run_id: str) -> bool:
-        # Stub implementation
-        return True
+        query1 = "DELETE FROM agent_messages WHERE task_id IN (SELECT id FROM tasks WHERE run_id = ?)"
+        query2 = "DELETE FROM tasks WHERE run_id = ?"
+        try:
+            if not self.db_path.exists(): return False
+            async with aiosqlite.connect(f"file:{self.db_path}", uri=True) as db:
+                await db.execute(query1, (run_id,))
+                await db.execute(query2, (run_id,))
+                await db.commit()
+                return True
+        except Exception:
+            return False
 

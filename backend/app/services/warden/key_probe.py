@@ -57,6 +57,6 @@ async def probe_all_keys():
                     action_taken="Suggested Key Rotation" # We are defaulting to suggest mode
                 )
                 session.add(event)
-                fire_webhook(event)
+                await fire_webhook(event)
         await session.commit()
     logger.info("Warden completed key probe cycle.")

@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Terminal, Bot, 
-  Database, Globe, Settings, Search, Plus, 
-  CheckCircle, Edit3, Save,
-  Tv, Link, Shield, ToggleLeft, RefreshCcw
-} from 'lucide-react';
+import { Tv, RefreshCcw } from 'lucide-react';
 import { messagingApi } from '../../lib/api/messaging_api';
 import { toast } from 'sonner';
 

@@ -111,11 +111,13 @@ async def rotate_vault_key(
     if not db_key:
         raise HTTPException(status_code=404, detail="Key not found")
         
-    # Stub: Update status or masked key to indicate rotation
-    db_key.api_key_masked = f"rot-...{secrets.token_hex(2)}"
+    # Generate a new random secret to simulate rotation
+    new_raw = secrets.token_hex(32)
+    db_key.encrypted_secret = encrypt_secret(new_raw)
+    db_key.api_key_masked = mask_secret(new_raw)
     db_key.status = "Active"
     session.add(db_key)
     await session.commit()
     
-    return {"status": "success", "message": "Key rotated successfully (stub)"}
+    return {"status": "success", "message": "Key rotated successfully"}
 

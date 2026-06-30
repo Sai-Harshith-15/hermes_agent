@@ -9,9 +9,11 @@ export function TunnelsScreen() {
   useEffect(() => {
     tunnelsApi.getTunnelUrl()
       .then(res => {
-        if (res.url) {
+        if (Array.isArray(res)) {
+          setTunnels(res);
+        } else if (res.url) {
           setTunnels(prev => [
-            { id: 1, name: 'primary_tunnel', url: res.url, target: 'frontend/backend', status: 'Online' },
+            { id: res.id || 1, name: res.name || 'api_tunnel', url: res.url, target: res.target || 'backend', status: res.status || 'Online' },
             ...prev
           ]);
         }

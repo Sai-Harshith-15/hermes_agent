@@ -44,5 +44,3 @@ export function ModelsScreen() {
   );
 }
 
-import { Palette } from 'lucide-react';
-

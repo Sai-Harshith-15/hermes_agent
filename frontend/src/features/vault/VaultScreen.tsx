@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Plus, Eye, RefreshCw } from 'lucide-react';
 import { vaultApi } from '../../lib/api/vault_api';
+import { useVaultStore } from '../../store/vaultStore';
 import { toast } from 'sonner';
 
 export function VaultScreen() {
@@ -8,10 +9,13 @@ export function VaultScreen() {
   const [newKeyForm, setNewKeyForm] = useState({ provider: '', model_name: '', api_key_masked: '', rpm_limit: 60 });
   const [vaultKeys, setVaultKeys] = useState<any[]>([]);
 
+  const setApiKeys = useVaultStore(state => state.setApiKeys);
+
   const fetchVault = async () => {
     try {
       const data = await vaultApi.getKeys();
       setVaultKeys(data);
+      setApiKeys(data);
     } catch (err) {
       console.error(err);
     }

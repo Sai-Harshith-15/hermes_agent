@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Palette } from 'lucide-react';
+import { fetchApi } from '../../lib/api/client';
 
 export function ThemesScreen() {
   const [themes, setThemes] = useState<any[]>([]);
 
   const fetchThemes = async () => {
     try {
-      const token = localStorage.getItem('token');
-      // Fix endpoint path
-      const res = await fetch('/api/v1/messaging/themes', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) setThemes(await res.json());
+      const data = await fetchApi('/messaging/themes');
+      if (data) setThemes(data);
     } catch (err) {
       console.error(err);
     }
