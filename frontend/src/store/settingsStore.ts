@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 
 const MOCK_ORACLE_STATS = {
-  cpu_usage: 18,
-  ram_used: 14.2,
-  ram_total: 24,
-  storage_used: 45,
-  storage_total: 200,
-  daemon_status: 'Active (stress-ng nice -n 19)'
+  cpu_usage: 0,
+  ram_used: 0,
+  ram_total: 0,
+  storage_used: 0,
+  storage_total: 0,
+  daemon_status: 'Offline'
 };
 
 interface SettingsState {

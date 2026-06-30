@@ -5,12 +5,12 @@ from typing import Optional
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Hermes Mission Control"
     
-    SECRET_KEY: str = "default_secret_key_change_me_in_production"
+    SECRET_KEY: str = os.environ.get("SECRET_KEY", "default_secret_key_change_me_in_production")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # Fernet symmetric encryption key for the Vault (must be 32 url-safe base64-encoded bytes)
-    MASTER_KEY: str = "ZGVmYXVsdF9tYXN0ZXJfa2V5X2NoYW5nZV9tZV9ub3c="
+    MASTER_KEY: str = os.environ.get("MASTER_KEY", "ZGVmYXVsdF9tYXN0ZXJfa2V5X2NoYW5nZV9tZV9ub3c=")
     
     ALLOWED_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 

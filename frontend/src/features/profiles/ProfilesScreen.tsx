@@ -9,7 +9,7 @@ export function ProfilesScreen() {
     queryFn: profilesApi.getProfiles
   });
   
-  const defaultProfiles = profilesData.length > 0 ? profilesData.map((p: any) => ({
+  const defaultProfiles = profilesData.map((p: any) => ({
     id: p.agent_name,
     profile_name: p.agent_name,
     role: 'Agent',
@@ -17,9 +17,7 @@ export function ProfilesScreen() {
     status: 'Idle',
     system_prompt: p.system_prompt,
     has_memories: p.has_memories
-  })) : [
-    { id: 'sess_1', profile_name: 'swe_lead', role: 'Local SWE Supervisor', model_route: 'Ollama: gemma-4-12b', status: 'Idle', system_prompt: '', has_memories: false }
-  ];
+  }));
   
   const [selectedProfile, setSelectedProfile] = useState<any>(defaultProfiles[0]);
   const [editedConfig, setEditedConfig] = useState('');
@@ -53,7 +51,7 @@ export function ProfilesScreen() {
   };
 
   if (isLoading) return <div className="text-gray-400 p-6">Loading profiles...</div>;
-  if (!selectedProfile) return null;
+  if (!selectedProfile) return <div className="text-gray-400 p-6 flex justify-center items-center h-full">No profiles available.</div>;
 
   return (
     <div className="h-[calc(100vh-8rem)] flex gap-6">

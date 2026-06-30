@@ -22,7 +22,7 @@ async def detect_loops():
                     event_type="LOOP_DETECTED",
                     severity="WARNING",
                     agent_ref=task.get("agent_name", "Unknown"),
-                    reasoning=f"Task {task.get('task_id')} has accumulated >5 errors recently.",
+                    reasoning=f"Task {task.get('id')} has accumulated >5 errors recently.",
                     action_taken="Suggested Steer or Pause"
                 )
                 session.add(event)

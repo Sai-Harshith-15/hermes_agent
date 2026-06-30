@@ -27,7 +27,7 @@ class HermesStateAdapter:
             return []
 
     async def get_recent_tasks(self, limit: int = 50) -> List[Dict[str, Any]]:
-        query = "SELECT * FROM tasks ORDER BY start_time DESC LIMIT ?"
+        query = "SELECT * FROM tasks ORDER BY created_at DESC LIMIT ?"
         try:
             return await self._execute_query(query, (limit,))
         except Exception:

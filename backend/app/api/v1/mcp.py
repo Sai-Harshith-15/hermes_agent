@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from app.models.users import User
+from app.core.rbac import RequireRole
 from pydantic import BaseModel
 from typing import Dict, Any, List
 import asyncio
@@ -29,7 +31,7 @@ async def get_mcp_servers() -> List[Dict[str, Any]]:
     return [{"name": k, **v} for k, v in mcp_servers.items()]
 
 @router.post("")
-async def add_mcp_server(req: MCPCreateRequest):
+async def add_mcp_server(req: MCPCreateRequest, _user: User = Depends(RequireRole(["owner", "admin"]))):
     raw_config = adapter.get_raw_config()
     if not raw_config:
         raw_config = "mcp_servers: {}\n"
@@ -54,7 +56,7 @@ async def add_mcp_server(req: MCPCreateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{server_name}")
-async def delete_mcp_server(server_name: str):
+async def delete_mcp_server(server_name: str, _user: User = Depends(RequireRole(["owner", "admin"]))):
     raw_config = adapter.get_raw_config()
     if not raw_config:
         return {"status": "not_found"}
@@ -74,7 +76,7 @@ async def delete_mcp_server(server_name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/test")
-async def test_mcp_server(req: MCPTestRequest):
+async def test_mcp_server(req: MCPTestRequest, _user: User = Depends(RequireRole(["owner", "admin"]))):
     if req.type == "sse":
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:

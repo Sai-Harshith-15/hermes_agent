@@ -1,167 +1,128 @@
-= Codebase Audit Report
+HERMES AGENT — FULL CODE AUDIT
 
-    What was added in this update (e13fe90)
+    Repo: Sai-Harshith-15/hermes_agent (fresh clone)
+    Scope: 25 backend routers (64 endpoints), 15 models, 15 services, 23 frontend screens, 18 API libs, 4 stores
+    Status: 30 backend issues + 15 frontend issues found
 
-    Area: Git hygiene
-    Change: Added *.db, sqlite.db, *.stackdump to .gitignore. Deleted crash dumps.
-    Status: ✅
+
+
+    🔴 CRITICAL — Runtime Crashes & Missing Backend Endpoints
+
+    #: 1
+    Issue: 3 sandbox file endpoints don't exist — frontend calls GET /sandbox/files, GET
+      /sandbox/file, PUT /sandbox/file but backend only has /sandbox/diff and WS
+    Location: sandbox.py ↔ SandboxScreen.tsx
+    Impact: File browser on SandboxScreen always 404s
     ────────────────────────────────────────
-    Area: .env.example
-    Change: Created for backend (full template) + frontend (VITE vars)
-    Status: ✅
+    #: 2
+    Issue: key_probe.py crashes — accesses key.api_key_encrypted but model field is
+      encrypted_secret
+    Location: services/warden/key_probe.py:14
+    Impact: Key health probes throw AttributeError
     ────────────────────────────────────────
-    Area: Alembic skeleton
-    Change: env.py, script.py.mako, initial migration (empty), versions/.gitkeep
-    Status: ✅
+    #: 3
+    Issue: healer.py crashes — accesses key.is_active and key.notes which don't exist on
+      ApiKeyPool model
+    Location: services/warden/healer.py:22-23
+    Impact: Warden auto-heal fails silently
     ────────────────────────────────────────
-    Area: Rate limiting
-    Change: Login endpoint: @limiter.limit("5/minute")
-    Status: ✅
+    #: 4
+    Issue: state_adapter.py schema mismatch — queries start_time column on tasks table but
+      model uses created_at
+    Location: services/hermes/state_adapter.py
+    Impact: Dashboard state loads no tasks
     ────────────────────────────────────────
-    Area: Admin setup UI
-    Change: LoginScreen: "First time? Setup Admin" toggle → calls /auth/setup
-    Status: ✅
+    #: 5
+    Issue: loop_detector.py wrong key — task.get("task_id") should be task.get("id")
+    Location: services/warden/loop_detector.py:25
+    Impact: Loop detection always misses
+
+    🟠 HIGH — Placeholder/Fake Data
+
+    #: 6
+    Issue: DashboardScreen shows MOCK_ORACLE_STATS (fake CPU/RAM) until WebSocket connects
+    Location: store/settingsStore.ts
     ────────────────────────────────────────
-    Area: RBAC
-    Change: Checkpoints DELETE + all control routes → admin/owner only
-    Status: ✅
+    #: 7
+    Issue: TunnelsScreen always shows a fake floci_api tunnel
+    Location: TunnelsScreen.tsx
     ────────────────────────────────────────
-    Area: Typed API client
-    Change: fetchApi<T>, typed interfaces for DashboardState, ConfigContent, etc.
-    Status: ✅
+    #: 8
+    Issue: ProfilesScreen shows fake swe_lead profile when API returns empty
+    Location: ProfilesScreen.tsx
     ────────────────────────────────────────
-    Area: ErrorBoundary
-    Change: New React error boundary wrapping all routes
-    Status: ✅
+    #: 9
+    Issue: sessions.py — PUT/DELETE messages, POST rewind, WS stream are all stubs returning
+      fake success
+    Location: backend/api/v1/sessions.py
     ────────────────────────────────────────
-    Area: PluginsScreen rewrite
-    Change: Proper name "Hermes Plugins", uses pluginsApi, empty state, WS install logs, icons
-    Status: ✅
+    #: 10
+    Issue: messaging.py /themes — returns hardcoded themes
+    Location: messaging.py
     ────────────────────────────────────────
-    Area: Terminal auto-reconnect
-    Change: 3s delay + auth token on WebSocket reconnect
-    Status: ✅
+    #: 11
+    Issue: vault.py /rotate — returns success with no rotation logic
+    Location: vault.py
+
+    🟡 MEDIUM — Security Gaps
+
+    #: 12
+    Issue: 2 WebSockets with ZERO auth — sandbox.py WS (Docker shell!) and sessions.py WS
+      accept any connection
     ────────────────────────────────────────
-    Area: sendAdminIntervention
-    Change: Now targets /control/inject-task (was dead /admin/intervene)
-    Status: ✅
+    #: 13
+    Issue: 6 routers missing role restrictions — config, hooks, curator, warden triggers,
+      messaging, kanban — any token user can do admin ops
     ────────────────────────────────────────
-    Area: Themes API rewrite
-    Change: 4 built-in themes, CSS variable injection, localStorage persistence
-    Status: ✅
+    #: 14
+    Issue: Hardcoded JWT secret — SECRET_KEY="default_secret_key_change_me_in_production"
     ────────────────────────────────────────
-    Area: psutil
-    Change: Added to requirements.txt
-    Status: ✅
+    #: 15
+    Issue: Hardcoded Fernet master key — vault encryption key is base64 of
+      "default_master_key_change_me_now"
     ────────────────────────────────────────
-    Area: WebSocket URL
-    Change: Uses env var (WS_BASE_URL) instead of hardcoded ws://localhost:8000
-    Status: ✅
+    #: 16
+    Issue: MCP POST /test can spawn arbitrary subprocesses (command injection surface)
     ────────────────────────────────────────
-    Area: Phases test
-    Change: Updated mock from hermesApi to profilesApi
-    Status: ✅
+    #: 17
+    Issue: settingsStore WebSocket ops — calls /api/v1/ops/ws but no such endpoint exists
+    ────────────────────────────────────────
+    #: 18
+    Issue: TerminalScreen uses localStorage.getItem('hermes_token') but everything else uses
+      'token'
 
+    🟡 MEDIUM — Code Quality
 
+    #: 19
+    Issue: 13 of 23 screens use raw useEffect+fetch instead of React Query (no caching)
+    ────────────────────────────────────────
+    #: 20
+    Issue: 9 screens missing loading/error states
+    ────────────────────────────────────────
+    #: 21
+    Issue: 3 API modules entirely unused — checkpoints_api.ts, themes_api.ts, ops_api.ts
+      (screens bypass them)
+    ────────────────────────────────────────
+    #: 22
+    Issue: 20+ dead imports in ModelsScreen.tsx, 9 dead imports in ChatScreen.tsx
+    ────────────────────────────────────────
+    #: 23
+    Issue: Alembic migration is empty — upgrade() and downgrade() are both pass
+    ────────────────────────────────────────
+    #: 24
+    Issue: Sync subprocess.run() in async handlers — ops.py, webhook_service.py block the
+      event loop
+    ────────────────────────────────────────
+    #: 25
+    Issue: Dashboard loads ALL records from 3 tables without pagination/limits
 
-    Issues Found
+    🟢 LOW — Previous Audit Status
 
-    P0 — Real Bugs (frontend calls them, backend is broken)
-
-    1. Curator trailing-slash bug REVERTED
-    backend/app/api/v1/curator.py:17 — @router.get("/") was restored. This creates the route at /api/v1/skills/curator/ (with trailing slash). Frontend calls /api/v1/skills/curator (without). Returns 404.
-    Fix: Change back to @router.get("").
-
-    2. Config.py crashes if .env has extra vars
-    backend/app/core/config.py — The Settings.Config class lacks extra="ignore". If anyone puts HERMES_DIR=~/.hermes in .env (which the .env.example template shows), pydantic-settings throws ValidationError because HERMES_DIR isn't a Settings field. The app won't boot.
-    Fix: Add model_config = SettingsConfigDict(env_file=".env", extra="ignore") to the Config class.
-
-    3. WebSocket JWT token in query string
-    URL format: ws://host/ws/telemetry?token=<JWT>. Tokens in query strings are logged by proxies, stored in browser history, and leaked via Referer headers. This is a security issue.
-    Fix: Send the token as the first WebSocket message (auth frame) instead.
-
-    4. Obsidian Memory Layer doesn't show real memory data
-    This is the big one you asked about. The /obsidian screen:
-    - Calls hermesApi.searchMemory() → /api/v1/memory/search → FTS5 query on memory_fts table (which may not exist — it's not created by SQLModel)
-    - Never calls /api/v1/memory/file to read actual MEMORY.md
-    - Falls back to store logs filtered for "memory/skill/file" keywords — not memory at all
-    - Shows hardcoded placeholder cards ("FastAPI SSE implementation decisions", "Resolved execute_code RCE vulnerability") when empty
-    - Has no Obsidian vault integration despite being called "Obsidian Memory Layer"
-
-    The memory layer is a facade. The search endpoint queries a table that may not exist, the file endpoints are never called by the frontend, and the UI is 90% demo data + filtered logs.
-
-    P1 — Path / Method Mismatches
-
-    5. requirements.txt has null-byte corruption
-    The slowapi line at line 21 reads: s\u0000l\u0000o\u0000w\u0000a\u0000p\u0000i... — embedded null bytes from a UTF-16 save. Pip will choke on this.
-    Fix: Rewrite requirements.txt cleanly.
-
-    6. CI pipeline is 100% commented out
-    .github/workflows/ci.yml — every line from name: onward is prefixed with #. Does nothing. Can't be enabled by uncommenting because the workflow file is syntactically invalid as-is.
-
-    7. Alembic initial migration is empty
-    3aadf7ae1912_initial_schema.py — just pass. Running alembic upgrade head creates zero tables.
-
-    P2 — Dead Code / Cleanup
-
-    8. sendAdminIntervention() is never imported
-    client.ts exports it, sendAdminIntervention is not called by any frontend screen. It was fixed from /admin/intervene to /control/inject-task, but nobody uses it.
-
-    9. "MCP Snitch Security" label
-    Nav label at App.tsx:176 says "MCP Snitch Security" — that's a fictional concept from the original blueprint. The screen actually lists MCP servers. Should be "MCP Servers".
-
-    10. NativeDashboardScreen is empty iframe
-    19 lines, just renders an empty <iframe> with no src. Placeholder.
-
-    P3 — Polish / Missing Features
-
-    11. No MEMORY.md/USER.md viewer
-    Backend has /api/v1/memory/file to read/write MEMORY.md, but the frontend has no UI tab for it. The Obsidian screen should have a tab showing the actual file content.
-
-    12. Config.py has PostgreSQL defaults for SQLite
-    DB_NAME: str = "sample-db", DB_USER: str = "postgres", DB_HOST: str = "127.0.0.1", DB_PORT: str = "5432" — these are never used (actual connection is SQLite), but confusing for anyone reading the code.
-
-    13. pid: "host" in docker-compose
-    Security concern for production — gives the container full access to host process list.
-
-    14. Screen Quality Classification
-
-    | Screen           | Route             | Lines | API Calls | Classification                 |
-    |------------------|-------------------|-------|-----------|--------------------------------|
-    | Dashboard        | /dashboard        | 156   | 2         | Fully                          |
-    | Analytics        | /analytics        | 112   | 2         | Fully                          |
-    | Native Dashboard | /native-dashboard | 19    | 1         | Fully                          |
-    | Terminal         | /terminal         | 127   | 0         | Fully — PTY WebSocket          |
-    | Kanban           | /kanban           | 146   | 2         | Fully                          |
-    | Sandbox          | /sandbox          | 271   | 5         | Fully                          |
-    | Warden           | /warden           | 117   | 7         | Fully                          |
-    | Vault            | /vault            | 205   | 3         | Fully                          |
-    | Profiles         | /profiles         | 142   | 4         | Fully — react-query            |
-    | Obsidian Memory  | /obsidian         | 89    | 3         | Fully                          |
-    | Sessions         | /sessions         | 314   | 3         | Fully                          |
-    | Chat             | /chat             | 94    | 4         | Fully                          |
-    | Skills           | /skills           | 140   | 3         | Fully                          |
-    | Plugins          | /plugins          | 185   | 3         | Fully                          |
-    | Models           | /models           | 58    | 3         | Fully                          |
-    | MCP              | /mcps             | 120   | 4         | Fully                          |
-    | Webhooks         | /webhooks         | 121   | 4         | Fully                          |
-    | Themes           | /themes           | 52    | 3         | Fully (client-side)            |
-    | Settings         | /settings         | 223   | 7         | Fully                          |
-    | Checkpoints      | /checkpoints      | 108   | 3         | Fully                          |
-    | Shell Hooks      | /hooks            | 147   | 0         | Fully                          |
-    | Tunnels          | /tunnels          | 57    | 0         | Fully                          |
-    | Channels         | /channels         | 125   | 3         | Fully                          |
-    | Login            | /login            | 73    | 0         | Fully                          |
-
-
-
-    Recommendations (Priority Order)
-
-    1. Fix the curator trailing slash — curator.py:17 → @router.get("") (5-second fix, immediately fixes a 404)
-    2. Add extra="ignore" to Settings.Config — prevents ValidationError on boot with standard .env file
-    3. Fix requirements.txt null bytes — rewrite the file cleanly or pip install will fail on slowapi
-    4. Rewrite the Obsidian Memory screen — Either make it actually read MEMORY.md/USER.md via /api/v1/memory/file, or rename it to "Session Search" and remove the fake placeholder cards. Right now it's misleading — claims to show "Obsidian Memory Layer" but shows demo data and store logs.
-    5. WebSocket auth: move token out of query string — Use a first-message auth frame
-    6. Uncomment or remove CI pipeline — As-is it's dead weight
-    7. Fix the MCP nav label — "MCP Snitch Security" → "MCP Servers"
-    8. Remove PostgreSQL defaults from config.py or add a comment explaining they're unused
+    | Previous Flag                 | Status                                   |
+    |-------------------------------|------------------------------------------|
+    | Curator path mismapping       | ✅ RESOLVED — paths correct              |
+    | Config.py extra=ignore        | ✅ FIXED                                 |
+    | Null-byte corruption          | ❓ Could not reproduce (file clean)      |
+    | Obsidian Memory fake cards    | ✅ FIXED — now uses real API calls       |
+    | CI/CD pipeline                | ❌ STILL missing — no .github/workflows/ |
+    | PostgreSQL defaults confusing | ❌ STILL present                         |

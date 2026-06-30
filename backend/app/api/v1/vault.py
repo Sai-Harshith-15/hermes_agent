@@ -99,5 +99,5 @@ async def rotate_vault_key(
     _user: User = Depends(RequireRole(["owner"])),
     session: AsyncSession = Depends(get_db),
 ):
-    return {"status": "success", "message": f"Rotation requested for {req.key_id}"}
+    raise HTTPException(status_code=501, detail="Key rotation not implemented yet")
 

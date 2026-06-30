@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 async def probe_key(key: ApiKeyPool) -> dict:
     try:
         from app.core.vault import decrypt_secret
-        real_key = decrypt_secret(key.api_key_encrypted)
+        real_key = decrypt_secret(key.encrypted_secret)
         
         async with httpx.AsyncClient(timeout=5.0) as client:
             if key.provider.lower() == "openai":

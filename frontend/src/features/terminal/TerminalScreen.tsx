@@ -45,7 +45,7 @@ export function TerminalScreen() {
 
     const connectWs = () => {
       try {
-        const token = localStorage.getItem('hermes_token');
+        const token = localStorage.getItem('token');
         const wsUrl = PTY_WS_URL;
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;

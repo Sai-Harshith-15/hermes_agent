@@ -25,6 +25,32 @@ class SandboxService:
         except Exception as e:
             return f"Error running git diff: {str(e)}"
             
+    def list_files(self, path: str = ".") -> list:
+        target = self.workspace_dir / path
+        if not target.exists() or not target.is_dir():
+            return []
+        files = []
+        for item in target.iterdir():
+            files.append({
+                "name": item.name,
+                "is_dir": item.is_dir(),
+                "size": item.stat().st_size if item.is_file() else 0,
+                "path": str(item.relative_to(self.workspace_dir)).replace("\\", "/")
+            })
+        return files
+
+    def read_file(self, path: str) -> str:
+        target = self.workspace_dir / path
+        if not target.exists() or not target.is_file():
+            raise FileNotFoundError(f"File {path} not found")
+        return target.read_text(encoding="utf-8")
+
+    def write_file(self, path: str, content: str) -> bool:
+        target = self.workspace_dir / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+        return True
+
     async def get_pty_bridge(self, container_id: str):
         """
         Creates a bridge to a docker container's PTY.

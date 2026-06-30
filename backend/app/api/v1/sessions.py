@@ -1,4 +1,4 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 from app.services.hermes.state_adapter import HermesStateAdapter
 from typing import List, Dict, Any
 from pydantic import BaseModel
@@ -27,27 +27,36 @@ class MessageEditRequest(BaseModel):
 
 @router.put("/{session_id}/messages/{message_id}")
 async def edit_message(session_id: str, message_id: str, payload: MessageEditRequest):
-    # Placeholder for editing a message in state DB
-    return {"status": "success"}
+    raise HTTPException(status_code=501, detail="Message editing not implemented yet")
 
 @router.delete("/{session_id}/messages/{message_id}")
 async def delete_message(session_id: str, message_id: str):
-    # Placeholder for deleting a message from state DB
-    return {"status": "success"}
+    raise HTTPException(status_code=501, detail="Message deletion not implemented yet")
 
 @router.post("/{session_id}/rewind")
 async def rewind_session(session_id: str, payload: Dict[str, Any]):
-    # payload: {"message_id": "...", "timestamp": "..."}
-    # Placeholder for rewinding the agent state to a specific message timestamp
-    return {"status": "success", "message": "Rewound successfully"}
+    raise HTTPException(status_code=501, detail="Session rewind not implemented yet")
 
 @router.websocket("/{session_id}/stream")
 async def session_stream(websocket: WebSocket, session_id: str):
     await websocket.accept()
     try:
-        # In a real implementation, this subscribes to a pubsub channel or tail-reads the agent's scratchpad log.
+        data = await websocket.receive_text()
+        import json
+        from jose import jwt, JWTError
+        from app.core.config import settings
+        payload = json.loads(data)
+        token = payload.get("token")
+        if not token:
+            await websocket.close(code=1008)
+            return
+        jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        
         while True:
             data = await websocket.receive_text()
             await websocket.send_text(f"Streaming dummy token for {session_id}")
-    except WebSocketDisconnect:
-        pass
+    except Exception:
+        try:
+            await websocket.close(code=1008)
+        except Exception:
+            pass

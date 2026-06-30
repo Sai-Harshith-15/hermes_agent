@@ -19,8 +19,8 @@ async def apply_healing_action(event_id: int, action: str):
         if action == "Suggested Key Rotation" and event.key_ref:
             key = await session.get(ApiKeyPool, event.key_ref)
             if key:
-                key.is_active = False
-                key.notes = f"Disabled by Warden: {event.reasoning}"
+                key.status = "Inactive"
+                key.last_probe_status = f"Disabled by Warden: {event.reasoning}"
                 event.action_taken = "Key Disabled"
                 await session.commit()
                 return {"status": "success", "action": "Key Disabled"}

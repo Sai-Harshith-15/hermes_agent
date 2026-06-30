@@ -3,9 +3,7 @@ import { Globe, CheckCircle } from 'lucide-react';
 import { tunnelsApi } from '../../lib/api/tunnels_api';
 
 export function TunnelsScreen() {
-  const [tunnels, setTunnels] = useState<any[]>([
-    { id: 2, name: 'floci_api', url: 'http://localhost:4566', target: 'Local AWS Emulation', status: 'Online' }
-  ]);
+  const [tunnels, setTunnels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
