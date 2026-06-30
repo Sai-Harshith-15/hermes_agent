@@ -38,21 +38,20 @@ export function AnalyticsScreen() {
     });
   });
 
-  const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
-  const pieData = Array.from(modelIds).map((model, idx) => {
-    // this pie data is an approximation if we don't have cost per model in the returned data, 
-    // actually our data returns `total_cost` per day, not per model. 
-    // Wait, the backend returns:
-    // formatted_data[day][f"{model_id}_input"] = row.input
-    // formatted_data[day][f"{model_id}_output"] = row.output
-    // formatted_data[day]["total_cost"] += row.total_cost
-    // It sums total cost per day. If we want pie chart for cost per provider/model, we might need a different endpoint or format.
-    // For now, let's just make a pie chart of total tokens per model over the 30 days.
+  const stringToColor = (str: string) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return `hsl(${Math.abs(hash) % 360}, 70%, 50%)`;
+  };
+
+  const pieData = Array.from(modelIds).map((model) => {
     let totalTokens = 0;
     data.forEach(day => {
       totalTokens += (day[`${model}_input`] || 0) + (day[`${model}_output`] || 0);
     });
-    return { name: model, value: totalTokens, color: colors[idx % colors.length] };
+    return { name: model, value: totalTokens, color: stringToColor(model) };
   });
 
   return (
@@ -76,11 +75,11 @@ export function AnalyticsScreen() {
                 <YAxis stroke="#9ca3af" fontSize={12} />
                 <RechartsTooltip contentStyle={{ backgroundColor: '#111827', borderColor: '#374151', color: '#f3f4f6' }} />
                 <Legend />
-                {Array.from(modelIds).map((model, idx) => (
-                  <Bar key={`${model}_input`} dataKey={`${model}_input`} stackId="a" fill={colors[idx % colors.length]} name={`${model} Input`} />
+                {Array.from(modelIds).map((model) => (
+                  <Bar key={`${model}_input`} dataKey={`${model}_input`} stackId="a" fill={stringToColor(model)} name={`${model} Input`} />
                 ))}
-                {Array.from(modelIds).map((model, idx) => (
-                  <Bar key={`${model}_output`} dataKey={`${model}_output`} stackId="a" fill={colors[(idx + 2) % colors.length]} name={`${model} Output`} />
+                {Array.from(modelIds).map((model) => (
+                  <Bar key={`${model}_output`} dataKey={`${model}_output`} stackId="a" fill={stringToColor(model + '_output')} name={`${model} Output`} />
                 ))}
               </BarChart>
             </ResponsiveContainer>

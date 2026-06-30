@@ -2,6 +2,8 @@ import { Activity, Server, HardDrive, Cpu, AlertTriangle, Bot, Clock, Play, Squa
 import { useSettingsStore } from '../../store/settingsStore';
 import { useVaultStore } from '../../store/vaultStore';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import { hermesApi } from '../../lib/api/hermes_api';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -19,6 +21,13 @@ const itemVariants = {
 export function DashboardScreen() {
   const { hostMetrics, logs } = useSettingsStore();
   const { apiKeys } = useVaultStore();
+
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['dashboardTasks'],
+    queryFn: hermesApi.getTasks,
+  });
+
+  const activeJobs = tasks.filter((t: any) => t.status !== 'Done').slice(0, 3);
 
   const alerts = logs
     .filter(log => log.log_level === 'WARNING' || log.log_level === 'ERROR')
@@ -53,9 +62,20 @@ export function DashboardScreen() {
               <Activity className="mr-2 text-emerald-500" size={16}/> Active Jobs
             </h3>
             <div className="space-y-3">
-              <JobRow name="company_loop.sh" schedule="Every 5 mins" status="Running" lastRun="Active Now" type="System" />
-              <JobRow name="yt_video_assembler" schedule="Daily @ 08:00" status="Sleeping" lastRun="14 hours ago" type="Media" />
-              <JobRow name="liteLLM_budget_reset" schedule="Hourly" status="Completed" lastRun="45 mins ago" type="Network" />
+              {activeJobs.length > 0 ? (
+                activeJobs.map((job: any, i: number) => (
+                  <JobRow 
+                    key={i} 
+                    name={job.title} 
+                    schedule={job.epic || "Ad-hoc"} 
+                    status={job.status} 
+                    lastRun="Active" 
+                    type={job.priority || "Normal"} 
+                  />
+                ))
+              ) : (
+                <div className="text-gray-500 text-sm text-center py-4">No active jobs in queue.</div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -72,10 +92,7 @@ export function DashboardScreen() {
                   <AlertItem key={i} text={`${alt.source}: ${alt.message}`} time="Real-Time" type={alt.log_level === 'ERROR' ? 'critical' : 'warning'} />
                 ))
               ) : (
-                <>
-                  <AlertItem text="DeepSeek API Key approaching RPM limit." time="10m ago" type="warning" />
-                  <AlertItem text="Oracle CPU dropped below 10% momentarily. NeverIdle engaged." time="3h ago" type="critical" />
-                </>
+                <div className="text-gray-500 text-sm text-center py-4">No active system alerts.</div>
               )}
             </ul>
           </div>

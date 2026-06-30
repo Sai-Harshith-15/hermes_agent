@@ -50,7 +50,7 @@ export function KanbanScreen() {
     const title = prompt("Enter new task title:");
     if (!title) return;
     const newTask = {
-      id: "T-" + Math.floor(Math.random() * 10000),
+      id: "T-" + crypto.randomUUID().split('-')[0],
       status: "todo",
       title: title,
       description: title,

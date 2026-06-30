@@ -33,8 +33,6 @@ export function ChatScreen() {
             role: m.role || 'user',
             content: m.content || m.message
           }))]);
-        } else {
-          setMessages(prev => [...prev, { role: 'assistant', content: 'Good evening. Shall I trigger the deployment pipeline?' }]);
         }
       })
       .catch(console.error);

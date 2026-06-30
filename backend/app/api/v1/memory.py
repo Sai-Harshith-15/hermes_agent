@@ -16,16 +16,20 @@ class MemoryContent(BaseModel):
     content: str
 
 @router.get("/file")
-async def read_memory_file() -> Dict[str, Any]:
-    path = os.path.expanduser("~/.hermes/MEMORY.md")
+async def read_memory_file(filename: str = "MEMORY.md") -> Dict[str, Any]:
+    if filename not in ["MEMORY.md", "USER.md"]:
+        filename = "MEMORY.md"
+    path = os.path.expanduser(f"~/.hermes/{filename}")
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
             return {"content": f.read()}
     return {"content": ""}
 
 @router.post("/file")
-async def write_memory_file(payload: MemoryContent) -> Dict[str, Any]:
-    path = os.path.expanduser("~/.hermes/MEMORY.md")
+async def write_memory_file(payload: MemoryContent, filename: str = "MEMORY.md") -> Dict[str, Any]:
+    if filename not in ["MEMORY.md", "USER.md"]:
+        filename = "MEMORY.md"
+    path = os.path.expanduser(f"~/.hermes/{filename}")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(payload.content)

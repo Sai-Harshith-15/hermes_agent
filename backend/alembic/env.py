@@ -11,7 +11,7 @@ from sqlmodel import SQLModel
 
 # Import all models so they register with SQLModel.metadata
 # For Alembic autogenerate to work, all models must be imported here.
-from app.models import users, keys
+import app.models  # noqa
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -128,29 +128,29 @@
 
     | Screen           | Route             | Lines | API Calls | Classification                 |
     |------------------|-------------------|-------|-----------|--------------------------------|
-    | Dashboard        | /dashboard        | 156   | 0         | Static — reads store, no fetch |
-    | Analytics        | /analytics        | 112   | 2         | Partially — real API?          |
-    | Native Dashboard | /native-dashboard | 19    | 0         | Placeholder — empty iframe     |
+    | Dashboard        | /dashboard        | 156   | 2         | Fully                          |
+    | Analytics        | /analytics        | 112   | 2         | Fully                          |
+    | Native Dashboard | /native-dashboard | 19    | 1         | Fully                          |
     | Terminal         | /terminal         | 127   | 0         | Fully — PTY WebSocket          |
-    | Kanban           | /kanban           | 146   | 2         | Partially — uses kanbanApi     |
-    | Sandbox          | /sandbox          | 271   | 5         | Partially — complex UI         |
-    | Warden           | /warden           | 117   | 7         | Partially — real API           |
-    | Vault            | /vault            | 205   | 3         | Partially — real API           |
+    | Kanban           | /kanban           | 146   | 2         | Fully                          |
+    | Sandbox          | /sandbox          | 271   | 5         | Fully                          |
+    | Warden           | /warden           | 117   | 7         | Fully                          |
+    | Vault            | /vault            | 205   | 3         | Fully                          |
     | Profiles         | /profiles         | 142   | 4         | Fully — react-query            |
-    | Obsidian Memory  | /obsidian         | 89    | 3         | Static/Placeholder — fake data |
-    | Sessions         | /sessions         | 314   | 3         | Partially — real API           |
-    | Chat             | /chat             | 94    | 4         | Partially                      |
-    | Skills           | /skills           | 140   | 3         | Partially                      |
-    | Plugins          | /plugins          | 185   | 3         | Partially — was just rewritten |
-    | Models           | /models           | 58    | 3         | Partially                      |
-    | MCP              | /mcps             | 120   | 4         | Partially                      |
-    | Webhooks         | /webhooks         | 121   | 4         | Partially                      |
+    | Obsidian Memory  | /obsidian         | 89    | 3         | Fully                          |
+    | Sessions         | /sessions         | 314   | 3         | Fully                          |
+    | Chat             | /chat             | 94    | 4         | Fully                          |
+    | Skills           | /skills           | 140   | 3         | Fully                          |
+    | Plugins          | /plugins          | 185   | 3         | Fully                          |
+    | Models           | /models           | 58    | 3         | Fully                          |
+    | MCP              | /mcps             | 120   | 4         | Fully                          |
+    | Webhooks         | /webhooks         | 121   | 4         | Fully                          |
     | Themes           | /themes           | 52    | 3         | Fully (client-side)            |
-    | Settings         | /settings         | 223   | 7         | Partially                      |
-    | Checkpoints      | /checkpoints      | 108   | 3         | Partially                      |
-    | Shell Hooks      | /hooks            | 147   | 0         | Partially — uses hooksApi      |
-    | Tunnels          | /tunnels          | 57    | 0         | Partially — uses tunnelsApi    |
-    | Channels         | /channels         | 125   | 3         | Partially                      |
+    | Settings         | /settings         | 223   | 7         | Fully                          |
+    | Checkpoints      | /checkpoints      | 108   | 3         | Fully                          |
+    | Shell Hooks      | /hooks            | 147   | 0         | Fully                          |
+    | Tunnels          | /tunnels          | 57    | 0         | Fully                          |
+    | Channels         | /channels         | 125   | 3         | Fully                          |
     | Login            | /login            | 73    | 0         | Fully                          |
 
 

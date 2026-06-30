@@ -12,5 +12,14 @@ export const hermesApi = {
   },
   getProfiles: async () => {
     return fetchApi('/profiles/');
+  },
+  getMemoryFile: async (filename: string) => {
+    return fetchApi(`/memory/file?filename=${encodeURIComponent(filename)}`);
+  },
+  saveMemoryFile: async (filename: string, content: string) => {
+    return fetchApi(`/memory/file?filename=${encodeURIComponent(filename)}`, {
+      method: 'POST',
+      body: JSON.stringify({ content })
+    });
   }
 };
