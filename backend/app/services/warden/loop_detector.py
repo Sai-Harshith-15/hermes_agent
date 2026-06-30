@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 async def detect_loops():
     """Deterministic loop detection logic."""
-    hermes_dir = settings.HERMES_DIR if hasattr(settings, "HERMES_DIR") else "~/.hermes/"
+    hermes_dir = "~/.hermes/"
     adapter = HermesStateAdapter(hermes_dir)
     
     tasks = await adapter.get_recent_tasks()

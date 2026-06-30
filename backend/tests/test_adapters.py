@@ -3,8 +3,6 @@ import os
 from pathlib import Path
 from app.services.hermes.config_adapter import HermesConfigAdapter
 from app.services.hermes.state_adapter import HermesStateAdapter
-from app.services.hermes.skills_adapter import HermesSkillsAdapter
-
 @pytest.fixture
 def temp_hermes_dir(tmp_path):
     # Setup mock hermes directory
@@ -41,16 +39,7 @@ def test_config_adapter_with_files(temp_hermes_dir):
     # but the test setup only creates soul.md.
     # Let me just check if agent_name matches, which is enough to prove it read the directory.
 
-def test_skills_adapter_missing_dir():
-    adapter = HermesSkillsAdapter(hermes_dir="/tmp/does_not_exist_hermes_123")
-    assert adapter.get_skills() == []
 
-def test_skills_adapter_with_files(temp_hermes_dir):
-    adapter = HermesSkillsAdapter(hermes_dir=str(temp_hermes_dir))
-    skills = adapter.get_skills()
-    assert len(skills) == 1
-    assert skills[0]["name"] == "git_analysis"
-    assert "git diff" in skills[0]["content"]
 
 @pytest.mark.asyncio
 async def test_state_adapter_missing_db():

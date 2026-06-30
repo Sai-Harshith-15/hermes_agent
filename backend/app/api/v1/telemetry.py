@@ -126,3 +126,13 @@ async def create_or_update_task(task: Tasks, session: AsyncSession = Depends(get
         "data": task.model_dump(mode="json")
     })
     return task
+
+# 7. Analytics GET
+@router.get("/analytics")
+async def get_analytics():
+    return {
+        "status": "success",
+        "data": {
+            "summary": "Analytics data placeholder"
+        }
+    }

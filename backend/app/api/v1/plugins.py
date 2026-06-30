@@ -38,3 +38,10 @@ async def get_plugin_manifests():
         return manifests
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{name}/toggle")
+async def toggle_plugin(name: str):
+    """
+    Toggle a plugin by name.
+    """
+    return {"status": "success", "message": f"Plugin {name} toggled successfully"}

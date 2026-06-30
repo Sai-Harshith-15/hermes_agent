@@ -93,6 +93,7 @@ async def reveal_vault_key(
 
 class VaultRotateRequest(BaseModel):
     key_id: str
+    new_key: str
 
 @router.post("/rotate")
 async def rotate_vault_key(
@@ -111,8 +112,8 @@ async def rotate_vault_key(
     if not db_key:
         raise HTTPException(status_code=404, detail="Key not found")
         
-    # Generate a new random secret to simulate rotation
-    new_raw = secrets.token_hex(32)
+    # Use the new key provided by the user
+    new_raw = req.new_key
     db_key.encrypted_secret = encrypt_secret(new_raw)
     db_key.api_key_masked = mask_secret(new_raw)
     db_key.status = "Active"
