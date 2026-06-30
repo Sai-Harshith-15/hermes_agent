@@ -63,9 +63,10 @@ export default function AgentCommandCenter() {
     const connectWS = () => {
       if (isUnmounted) return;
       const token = localStorage.getItem('token');
-      ws = new WebSocket(`${WS_BASE_URL}?token=${token}`);
+      ws = new WebSocket(`${WS_BASE_URL}`);
 
       ws.onopen = () => {
+        if (token) ws.send(JSON.stringify({ token }));
         setWsConnected(true);
       };
 
@@ -173,7 +174,7 @@ export default function AgentCommandCenter() {
               <NavItem id="models" icon={Box} label="Models" current={currentScreen} set={(id) => navigate(`/${id}`)} />
               <NavItem id="vault" icon={Key} label="API Vault" current={currentScreen} set={(id) => navigate(`/${id}`)} />
               <NavItem id="hooks" icon={Terminal} label="Shell Hooks" current={currentScreen} set={(id) => navigate(`/${id}`)} />
-              <NavItem id="mcps" icon={Shield} label="MCP Snitch Security" current={currentScreen} set={(id) => navigate(`/${id}`)} />
+              <NavItem id="mcps" icon={Shield} label="MCP Servers" current={currentScreen} set={(id) => navigate(`/${id}`)} />
               <NavItem id="webhooks" icon={Link} label="Webhooks" current={currentScreen} set={(id) => navigate(`/${id}`)} />
               <NavItem id="themes" icon={Puzzle} label="Themes" current={currentScreen} set={(id) => navigate(`/${id}`)} />
               <NavItem id="settings" icon={Settings} label="System Config" current={currentScreen} set={(id) => navigate(`/${id}`)} />

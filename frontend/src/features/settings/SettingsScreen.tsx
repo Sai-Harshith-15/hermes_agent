@@ -55,11 +55,12 @@ export function SettingsScreen() {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     // In dev, use the VITE_API_BASE_URL host or fallback to localhost:8000 if not available
     const host = import.meta.env.VITE_API_BASE_URL ? new URL(import.meta.env.VITE_API_BASE_URL).host : window.location.host;
-    const wsUrl = `${wsProtocol}//${host}/api/v1/ops/ws?op=${op}&token=${token}`;
+    const wsUrl = `${wsProtocol}//${host}/api/v1/ops/ws?op=${op}`;
     
     const ws = new WebSocket(wsUrl);
     
     ws.onopen = () => {
+      if (token) ws.send(JSON.stringify({ token }));
       setOpLogs(prev => prev + `Connected.\n`);
     };
     

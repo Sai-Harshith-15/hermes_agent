@@ -9,18 +9,22 @@ from jose import jwt, JWTError
 from app.core.config import settings
 
 @router.websocket("")
-async def pty_endpoint(websocket: WebSocket, token: str):
+async def pty_endpoint(websocket: WebSocket):
+    await websocket.accept()
     try:
+        auth_data = await websocket.receive_json()
+        token = auth_data.get("token")
+        if not token:
+            await websocket.close(code=1008)
+            return
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             await websocket.close(code=1008)
             return
-    except JWTError:
+    except Exception:
         await websocket.close(code=1008)
         return
-
-    await websocket.accept()
     
     # Check if we're on Windows where pty is not available
     if os.name == 'nt':

@@ -1,14 +1,9 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
 from typing import Optional
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Hermes Mission Control"
-    DB_NAME: str = "sample-db"
-    DB_USER: str = "postgres"
-    DB_PASSWORD: str = "dummy_password"
-    DB_HOST: str = "127.0.0.1"
-    DB_PORT: str = "5432"
     
     SECRET_KEY: str = "default_secret_key_change_me_in_production"
     ALGORITHM: str = "HS256"
@@ -26,7 +21,6 @@ class Settings(BaseSettings):
         db_path = os.path.expanduser(f"{hermes_dir}/hermes_state.db")
         return f"sqlite+aiosqlite:///{db_path}"
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()

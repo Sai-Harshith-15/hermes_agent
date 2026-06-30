@@ -27,8 +27,8 @@ export function ObsidianScreen() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex justify-between items-end mb-2">
         <div>
-          <h2 className="text-2xl font-bold text-white">Obsidian Memory Layer</h2>
-          <p className="text-sm text-gray-400">FTS5 SQLite indexed sessions & long-term knowledge retention.</p>
+          <h2 className="text-2xl font-bold text-white">Session Search</h2>
+          <p className="text-sm text-gray-400">Search through previous session logs and memory.</p>
         </div>
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
@@ -64,22 +64,9 @@ export function ObsidianScreen() {
               </div>
             ))
           ) : (
-            <>
-              <div className="bg-gray-950 border border-gray-800 p-5 rounded-lg hover:border-gray-600 transition-colors cursor-pointer group">
-                <div className="flex justify-between items-start mb-3">
-                  <span className="text-xs font-mono text-purple-400 bg-purple-500/10 px-2 py-1 rounded">#architecture</span>
-                  <span className="text-[10px] text-gray-500">2026-06-12</span>
-                </div>
-                <h4 className="text-gray-200 font-medium text-sm mb-3 group-hover:text-emerald-400 transition-colors">FastAPI SSE implementation decisions</h4>
-              </div>
-              <div className="bg-gray-950 border border-gray-800 p-5 rounded-lg hover:border-gray-600 transition-colors cursor-pointer group">
-                <div className="flex justify-between items-start mb-3">
-                  <span className="text-xs font-mono text-purple-400 bg-purple-500/10 px-2 py-1 rounded">#bugfix</span>
-                  <span className="text-[10px] text-gray-500">2026-06-11</span>
-                </div>
-                <h4 className="text-gray-200 font-medium text-sm mb-3 group-hover:text-emerald-400 transition-colors">Resolved execute_code RCE vulnerability</h4>
-              </div>
-            </>
+            <div className="col-span-full text-center py-10 text-gray-500">
+              No results found. Start typing to search sessions.
+            </div>
           )}
         </div>
       </div>

@@ -33,8 +33,11 @@ export function SkillsScreen() {
     const token = localStorage.getItem('token') || '';
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = import.meta.env.VITE_API_BASE_URL ? new URL(import.meta.env.VITE_API_BASE_URL).host : window.location.host;
-    const ws = new WebSocket(`${wsProtocol}//${host}/ws/telemetry?token=${token}`);
+    const ws = new WebSocket(`${wsProtocol}//${host}/ws/telemetry`);
     
+    ws.onopen = () => {
+      if (token) ws.send(JSON.stringify({ token }));
+    };
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);

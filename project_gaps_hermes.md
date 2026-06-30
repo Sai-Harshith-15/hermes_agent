@@ -1,191 +1,167 @@
-✅ What you already have covered (features that map well)
-
-    Your manual describes these features that will genuinely be useful in a custom dashboard:
-
-    | Your Feature                | Real Hermes Equivalent           | Notes                                               |
-    |-----------------------------|----------------------------------|-----------------------------------------------------|
-    | Config editing              | ~/.hermes/config.yaml read/write | ✅ Solid — this is how the real dashboard works too |
-    | API Keys management         | ~/.hermes/.env read/write        | ✅ Same approach                                    |
-    | Sessions browsing           | ~/.hermes/state.db (SQLite)      | ✅ Your read-only approach works                    |
-    | Host metrics (CPU/RAM/disk) | psutil + /proc                   | ✅ Useful for any dashboard                         |
-    | Log viewer                  | ~/.hermes/logs/                  | ✅ Same files the real dashboard reads              |
-    | Profile management          | ~/.hermes/profiles/<name>/       | ✅ Valid directory structure                        |
-    | Kanban integration          | ~/.hermes/kanban.db              | ✅ Real board exists                                |
-    | Cron jobs management        | ~/.hermes/cron/                  | ✅ Real scheduler exists                            |
-    | Cloudflare Tunnel           | Your own integration             | ✅ Valid if you want public access                  |
-    | Auth + login                | Your own auth                    | ✅ Fine for a custom project                        |
-
-
-
-    ❌ Features from the real Hermes dashboard you're missing
-
-    These are things the actual hermes dashboard provides that your HMC manual doesn't mention at all:
-
-    ✅ 1. Embedded Chat / Terminal (BIGGEST GAP)
-    (IMPLEMENTED)
-
-    The real dashboard runs the full Hermes TUI inside the browser via a PTY WebSocket (/api/pty). You can type messages, see tool calls stream in, use slash commands — everything you can do in the terminal. Your HMC has no way to actually talk to Hermes from the browser.
-
-    How it works (for your implementation):
-
-    Browser (xterm.js) ←WebSocket→ FastAPI → spawns hermes --tui as PTY child
-
-    Real code path: web/src/ uses xterm.js with WebGL renderer, server spawns the TUI behind a POSIX pseudo-terminal, keystrokes flow one direction, ANSI output streams back.
-
-    ✅ 2. Theme System
-    (IMPLEMENTED)
-
-    7 built-in themes (Hermes Teal, Midnight, Ember, Mono, Cyberpunk, Rosé) + custom YAML themes in ~/.hermes/dashboard-themes/. 3-layer palette (background/midground/foreground), typography stack, layout density/radius, component chrome overrides, custom CSS — all hot-swappable from a palette icon in the header.
-
-    ✅ 3. Plugin System
-    (IMPLEMENTED)
-
-    Plugins live in ~/.hermes/plugins/<name>/dashboard/ with a manifest.json + JS bundle + optional Python backend. Can add tabs, replace built-in pages, inject into shell slots (sidebar, header). Uses a Plugin SDK on window.__HERMES_PLUGIN_SDK__ so plugins don't bundle React.
-
-    ✅ 4. MCP Server Management
-    (IMPLEMENTED)
-
-    Full CRUD for MCP servers (stdio + HTTP/SSE), enable/disable toggle, test connection against live server, catalog browser to install approved servers with one click. The real catalog lives at optional-mcps/ in the Hermes repo.
-
-    ✅ 5. Messaging Channels Setup UI
-    (IMPLEMENTED)
-
-    Every platform (Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Mattermost, Email, SMS, BlueBubbles, DingTalk, Feishu, WeCom, etc.) with per-platform setup forms, enable/disable toggles, test connection, and a "restart gateway" button. Your manual doesn't mention this at all.
-
-    ✅ 6. Pairing Management
-    (IMPLEMENTED)
-
-    Approve/revoke pending messaging users. The real gateway uses a pairing code system — users send a code on Telegram/Discord/etc. and the admin approves from the dashboard.
-
-    ✅ 7. Skills Hub Browsing + Install
-    (IMPLEMENTED)
-
-    Search the skill hub (all sources), install by ID with live log output, update all button. The real system uses ~/.hermes/skills/ on disk and a hub registry.
-
-    ✅ 8. Webhook Subscription Management
-    (IMPLEMENTED)
-
-    Create/enable/disable webhook routes with event filter, delivery target, direct-delivery mode. On creation it shows the route URL + one-time HMAC secret.
-
-    ✅ 9. Credential Pool UI (not just .env keys)
-    (IMPLEMENTED)
-
-    Per-provider rotating API key pools. Add/remove keys for OpenRouter, Anthropic, etc. Keys are round-robinned. Your manual mentions "5× OpenCode + 3× OpenRouter" as a fixed scheme, but real Hermes pools per-provider dynamically.
-
-    ✅ 10. System Operations
-    (IMPLEMENTED)
-
-    Doctor check, security audit, create/restore backup, update skills, prompt-size breakdown, support dump generation, config migration — all with live log streaming into the page.
-
-    ✅ 11. Analytics
-    (IMPLEMENTED)
-
-    Token usage chart (stacked daily bar), cost breakdown, per-model breakdown. Computed from session history. Your manual has no analytics.
-
-    ✅ 12. Shell Hooks Management
-    (IMPLEMENTED)
-
-    Create/remove shell hooks (event + command + matcher + timeout) with consent-gated security. The real system stores them in ~/.hermes/shell-hooks-allowlist.json.
-
-    ✅ 13. Checkpoints Management
-    (IMPLEMENTED)
-
-    View and prune the /rollback filesystem checkpoint store.
-
-    ✅ 14. Skill Curator Status
-    (IMPLEMENTED)
-
-    Pause/resume/view the background skill maintenance system.
-
-
-
-    🛠️ Concepts in your manual that need correction
-
-    These are things your manual describes that don't exist in the real Hermes Agent. You need to either implement them as custom extensions or replace them with what actually exists on disk.
-
-    company_loop.sh — ❌ Doesn't exist
-
-    What your manual says: A heartbeat script that POSTs metrics and wakes agents.
-    What actually exists: Hermes has no central loop script. The gateway runs as a service. cronjob tool handles scheduled work. If you want telemetry, you'll need to build your own collector that reads from ~/.hermes/logs/ and system /proc/ — there is no stock script to bolt onto.
-
-    litellm_hook.py — ❌ Doesn't exist
-
-    What your manual says: A LiteLLM callback for token/cost tracking.
-    What actually exists: Hermes calls LLM providers directly — no LiteLLM proxy in between. There's no callback hook to install. If you want token tracking, read ~/.hermes/state.db (which has session token counts) directly.
-
-    hermes_log_shim.py — ❌ Doesn't exist
-
-    What your manual says: A logging shim sub-agents import to send logs to HMC.
-    What actually exists: Hermes agents log to files in ~/.hermes/logs/. There's no HTTP-push shim.
-
-    soul.md / taste.md — ❌ Don't exist
-
-    What your manual says: Profile files for agent identity and standards.
-    What actually exists: Hermes profiles are directories under ~/.hermes/profiles/<name>/ containing their own config.yaml, .env, state.db, skills/, memories/, etc. There are no soul.md or taste.md files anywhere in Hermes. But — if you want to create these as custom concept files that influence the agent prompt, you can. You'd need to modify the agent's prompt builder (which reads from config, not custom files).
-
-    ~/.hermes/control/inbox/ — ❌ Doesn't exist
-
-    What your manual says: Directory where HMC drops JSON intent files for the agent to pick up.
-    What actually exists: No such directory or polling mechanism exists. You'd need to build the consumer side inside Hermes (modify company_loop.sh which doesn't exist either, or add a cron job that polls the directory).
-
-    "Layer 1/2/3" agent hierarchy — ❌ Not a real concept
-
-    What your manual says: Multi-layer agent supervision with Warden judges.
-    What actually exists: Hermes has delegate_task for subagents (flat, not layered), and kanban for multi-agent work queues. There's no Layer 1/2/3 hierarchy, no supervisor/warden layers.
-
-    "Warden" self-healing — ❌ Doesn't exist
-
-    What your manual says: Automated probe → detect → heal cycle for stuck agents and dead keys.
-    What actually exists: Nothing like this ships with Hermes. If you want it, it's all custom build.
-
-    "Janitor" disk cleanup — ❌ Doesn't exist
-
-    What your manual says: Automated disk space management.
-    What actually exists: Nothing built-in. There's hermes sessions prune for old sessions but no automated disk janitor.
-
-    Postgres — ❌ Not used by Hermes
-
-    What your manual says: Postgres database.
-    What actually exists: Hermes uses SQLite for everything (state.db, kanban.db). Postgres adds operational complexity with zero gain for a single-host deployment.
-
-    Nginx — ❌ Not needed
-
-    What your manual says: Nginx reverse proxy.
-    What actually exists: The real hermes dashboard serves its own static files + API from FastAPI/Uvicorn directly on one port. No Nginx needed. (You can still use Nginx if you want, but it's optional.)
-
-    5× OpenCode + 3× OpenRouter — ❌ Not a real scheme
-
-    What your manual says: Fixed key pools.
-    What actually exists: Credential pools are per-provider with arbitrary numbers of keys. The dashboard's credential pool UI lets you add/remove keys dynamically — not a fixed 5+3 config.
-
-
-
-    📋 Priority roadmap for your HMC project
-
-    Based on what's most useful vs. what's fictional, here's what I'd recommend building next:
-
-    Phase 1 — Core (build these first)
-    1. Embedded Chat/PTY terminal — This is the #1 thing your dashboard is missing. Without it, you can see Hermes state but never talk to Hermes from the dashboard. Use xterm.js in the frontend + PTY WebSocket in the backend that spawns hermes --tui.
-    2. Sessions detail view — Full message history with color-coded roles, tool call expand/collapse, FTS5 search
-    3. Real .env/config.yaml read/write — Your manual mentions these but make sure they actually work with Hermes's file format
-
-    Phase 2 — Important features
-    4. MCP server management — Add/test/enable/disable MCP servers. Real format lives in config.yaml under mcp_servers: block
-    5. Skills management — List installed skills from ~/.hermes/skills/, enable/disable toggle, hub search/install
-    6. Messaging Channels UI — Per-platform setup forms that write to .env + config.yaml
-    7. Credential pool UI — Not just single keys, but rotating pools per provider
-    8. System operations — Doctor check, backup/restore, security audit
-
-    Phase 3 — Polish
-    9. Analytics — Token usage chart + cost breakdown from state.db
-    10. Theme system — Even a simple theme picker makes your dashboard feel polished
-    11. Webhook management — Create/enable/disable webhook routes
-    12. Pairing management — Approve messaging users from the browser
-
-    What to drop or rethink
-    - company_loop.sh → Replace with a simple Python cron script or just read system metrics directly
-    - litellm_hook.py → Drop this. Read token counts from state.db instead
-    - soul.md/taste.md → These are fine as a custom concept if you want them, but they don't exist in Hermes. You'll need to decide: do you want your dashboard to be compatible with stock Hermes (then drop these) or are you forking/modifying Hermes to support them?
-    - Postgres → Consider SQLite instead. Hermes already uses it, and it eliminates a whole container for your deployment
-    - Layer 1/2/3 → Replace with real delegate_task and kanban concepts
-    - Warden/Janitor → Nice if you want to build it, but it's 100% custom work — nothing exists in Hermes to build on
+= Codebase Audit Report
+
+    What was added in this update (e13fe90)
+
+    Area: Git hygiene
+    Change: Added *.db, sqlite.db, *.stackdump to .gitignore. Deleted crash dumps.
+    Status: ✅
+    ────────────────────────────────────────
+    Area: .env.example
+    Change: Created for backend (full template) + frontend (VITE vars)
+    Status: ✅
+    ────────────────────────────────────────
+    Area: Alembic skeleton
+    Change: env.py, script.py.mako, initial migration (empty), versions/.gitkeep
+    Status: ✅
+    ────────────────────────────────────────
+    Area: Rate limiting
+    Change: Login endpoint: @limiter.limit("5/minute")
+    Status: ✅
+    ────────────────────────────────────────
+    Area: Admin setup UI
+    Change: LoginScreen: "First time? Setup Admin" toggle → calls /auth/setup
+    Status: ✅
+    ────────────────────────────────────────
+    Area: RBAC
+    Change: Checkpoints DELETE + all control routes → admin/owner only
+    Status: ✅
+    ────────────────────────────────────────
+    Area: Typed API client
+    Change: fetchApi<T>, typed interfaces for DashboardState, ConfigContent, etc.
+    Status: ✅
+    ────────────────────────────────────────
+    Area: ErrorBoundary
+    Change: New React error boundary wrapping all routes
+    Status: ✅
+    ────────────────────────────────────────
+    Area: PluginsScreen rewrite
+    Change: Proper name "Hermes Plugins", uses pluginsApi, empty state, WS install logs, icons
+    Status: ✅
+    ────────────────────────────────────────
+    Area: Terminal auto-reconnect
+    Change: 3s delay + auth token on WebSocket reconnect
+    Status: ✅
+    ────────────────────────────────────────
+    Area: sendAdminIntervention
+    Change: Now targets /control/inject-task (was dead /admin/intervene)
+    Status: ✅
+    ────────────────────────────────────────
+    Area: Themes API rewrite
+    Change: 4 built-in themes, CSS variable injection, localStorage persistence
+    Status: ✅
+    ────────────────────────────────────────
+    Area: psutil
+    Change: Added to requirements.txt
+    Status: ✅
+    ────────────────────────────────────────
+    Area: WebSocket URL
+    Change: Uses env var (WS_BASE_URL) instead of hardcoded ws://localhost:8000
+    Status: ✅
+    ────────────────────────────────────────
+    Area: Phases test
+    Change: Updated mock from hermesApi to profilesApi
+    Status: ✅
+
+
+
+    Issues Found
+
+    P0 — Real Bugs (frontend calls them, backend is broken)
+
+    1. Curator trailing-slash bug REVERTED
+    backend/app/api/v1/curator.py:17 — @router.get("/") was restored. This creates the route at /api/v1/skills/curator/ (with trailing slash). Frontend calls /api/v1/skills/curator (without). Returns 404.
+    Fix: Change back to @router.get("").
+
+    2. Config.py crashes if .env has extra vars
+    backend/app/core/config.py — The Settings.Config class lacks extra="ignore". If anyone puts HERMES_DIR=~/.hermes in .env (which the .env.example template shows), pydantic-settings throws ValidationError because HERMES_DIR isn't a Settings field. The app won't boot.
+    Fix: Add model_config = SettingsConfigDict(env_file=".env", extra="ignore") to the Config class.
+
+    3. WebSocket JWT token in query string
+    URL format: ws://host/ws/telemetry?token=<JWT>. Tokens in query strings are logged by proxies, stored in browser history, and leaked via Referer headers. This is a security issue.
+    Fix: Send the token as the first WebSocket message (auth frame) instead.
+
+    4. Obsidian Memory Layer doesn't show real memory data
+    This is the big one you asked about. The /obsidian screen:
+    - Calls hermesApi.searchMemory() → /api/v1/memory/search → FTS5 query on memory_fts table (which may not exist — it's not created by SQLModel)
+    - Never calls /api/v1/memory/file to read actual MEMORY.md
+    - Falls back to store logs filtered for "memory/skill/file" keywords — not memory at all
+    - Shows hardcoded placeholder cards ("FastAPI SSE implementation decisions", "Resolved execute_code RCE vulnerability") when empty
+    - Has no Obsidian vault integration despite being called "Obsidian Memory Layer"
+
+    The memory layer is a facade. The search endpoint queries a table that may not exist, the file endpoints are never called by the frontend, and the UI is 90% demo data + filtered logs.
+
+    P1 — Path / Method Mismatches
+
+    5. requirements.txt has null-byte corruption
+    The slowapi line at line 21 reads: s\u0000l\u0000o\u0000w\u0000a\u0000p\u0000i... — embedded null bytes from a UTF-16 save. Pip will choke on this.
+    Fix: Rewrite requirements.txt cleanly.
+
+    6. CI pipeline is 100% commented out
+    .github/workflows/ci.yml — every line from name: onward is prefixed with #. Does nothing. Can't be enabled by uncommenting because the workflow file is syntactically invalid as-is.
+
+    7. Alembic initial migration is empty
+    3aadf7ae1912_initial_schema.py — just pass. Running alembic upgrade head creates zero tables.
+
+    P2 — Dead Code / Cleanup
+
+    8. sendAdminIntervention() is never imported
+    client.ts exports it, sendAdminIntervention is not called by any frontend screen. It was fixed from /admin/intervene to /control/inject-task, but nobody uses it.
+
+    9. "MCP Snitch Security" label
+    Nav label at App.tsx:176 says "MCP Snitch Security" — that's a fictional concept from the original blueprint. The screen actually lists MCP servers. Should be "MCP Servers".
+
+    10. NativeDashboardScreen is empty iframe
+    19 lines, just renders an empty <iframe> with no src. Placeholder.
+
+    P3 — Polish / Missing Features
+
+    11. No MEMORY.md/USER.md viewer
+    Backend has /api/v1/memory/file to read/write MEMORY.md, but the frontend has no UI tab for it. The Obsidian screen should have a tab showing the actual file content.
+
+    12. Config.py has PostgreSQL defaults for SQLite
+    DB_NAME: str = "sample-db", DB_USER: str = "postgres", DB_HOST: str = "127.0.0.1", DB_PORT: str = "5432" — these are never used (actual connection is SQLite), but confusing for anyone reading the code.
+
+    13. pid: "host" in docker-compose
+    Security concern for production — gives the container full access to host process list.
+
+    14. Screen Quality Classification
+
+    | Screen           | Route             | Lines | API Calls | Classification                 |
+    |------------------|-------------------|-------|-----------|--------------------------------|
+    | Dashboard        | /dashboard        | 156   | 0         | Static — reads store, no fetch |
+    | Analytics        | /analytics        | 112   | 2         | Partially — real API?          |
+    | Native Dashboard | /native-dashboard | 19    | 0         | Placeholder — empty iframe     |
+    | Terminal         | /terminal         | 127   | 0         | Fully — PTY WebSocket          |
+    | Kanban           | /kanban           | 146   | 2         | Partially — uses kanbanApi     |
+    | Sandbox          | /sandbox          | 271   | 5         | Partially — complex UI         |
+    | Warden           | /warden           | 117   | 7         | Partially — real API           |
+    | Vault            | /vault            | 205   | 3         | Partially — real API           |
+    | Profiles         | /profiles         | 142   | 4         | Fully — react-query            |
+    | Obsidian Memory  | /obsidian         | 89    | 3         | Static/Placeholder — fake data |
+    | Sessions         | /sessions         | 314   | 3         | Partially — real API           |
+    | Chat             | /chat             | 94    | 4         | Partially                      |
+    | Skills           | /skills           | 140   | 3         | Partially                      |
+    | Plugins          | /plugins          | 185   | 3         | Partially — was just rewritten |
+    | Models           | /models           | 58    | 3         | Partially                      |
+    | MCP              | /mcps             | 120   | 4         | Partially                      |
+    | Webhooks         | /webhooks         | 121   | 4         | Partially                      |
+    | Themes           | /themes           | 52    | 3         | Fully (client-side)            |
+    | Settings         | /settings         | 223   | 7         | Partially                      |
+    | Checkpoints      | /checkpoints      | 108   | 3         | Partially                      |
+    | Shell Hooks      | /hooks            | 147   | 0         | Partially — uses hooksApi      |
+    | Tunnels          | /tunnels          | 57    | 0         | Partially — uses tunnelsApi    |
+    | Channels         | /channels         | 125   | 3         | Partially                      |
+    | Login            | /login            | 73    | 0         | Fully                          |
+
+
+
+    Recommendations (Priority Order)
+
+    1. Fix the curator trailing slash — curator.py:17 → @router.get("") (5-second fix, immediately fixes a 404)
+    2. Add extra="ignore" to Settings.Config — prevents ValidationError on boot with standard .env file
+    3. Fix requirements.txt null bytes — rewrite the file cleanly or pip install will fail on slowapi
+    4. Rewrite the Obsidian Memory screen — Either make it actually read MEMORY.md/USER.md via /api/v1/memory/file, or rename it to "Session Search" and remove the fake placeholder cards. Right now it's misleading — claims to show "Obsidian Memory Layer" but shows demo data and store logs.
+    5. WebSocket auth: move token out of query string — Use a first-message auth frame
+    6. Uncomment or remove CI pipeline — As-is it's dead weight
+    7. Fix the MCP nav label — "MCP Snitch Security" → "MCP Servers"
+    8. Remove PostgreSQL defaults from config.py or add a comment explaining they're unused

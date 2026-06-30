@@ -14,7 +14,7 @@ def is_curator_running() -> bool:
             pass
     return False
 
-@router.get("/")
+@router.get("")
 async def get_curator_status():
     status = "running" if is_curator_running() else "paused"
     return {"status": status}

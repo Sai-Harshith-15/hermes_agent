@@ -29,18 +29,22 @@ def run_backup():
     return {"status": "success", "logs": logs or "Executed hermes backup."}
 
 @router.websocket("/ws")
-async def ops_websocket(websocket: WebSocket, token: str, op: str):
+async def ops_websocket(websocket: WebSocket, op: str):
+    await websocket.accept()
     try:
+        auth_data = await websocket.receive_json()
+        token = auth_data.get("token")
+        if not token:
+            await websocket.close(code=1008)
+            return
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             await websocket.close(code=1008)
             return
-    except JWTError:
+    except Exception:
         await websocket.close(code=1008)
         return
-
-    await websocket.accept()
 
     allowed_ops = {
         "doctor": "hermes doctor",

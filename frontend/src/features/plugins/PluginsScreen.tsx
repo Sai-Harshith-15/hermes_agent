@@ -35,8 +35,12 @@ export function PluginsScreen() {
 
     setInstallLog([`Starting install for: ${installingPlugin}...`]);
     const token = localStorage.getItem('token');
-    const ws = new WebSocket(`${WS_BASE_URL}?token=${token}`);
+    const ws = new WebSocket(`${WS_BASE_URL}`);
     wsRef.current = ws;
+
+    ws.onopen = () => {
+      if (token) ws.send(JSON.stringify({ token }));
+    };
 
     ws.onmessage = (event) => {
       try {

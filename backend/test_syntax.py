@@ -10,7 +10,7 @@ try:
     print("SUCCESS: FastAPI app loaded without syntax or import errors.")
     
     # Audit endpoints
-    routes = [route.path for route in app.routes]
+    routes = [getattr(route, 'path', '') for route in app.routes if hasattr(route, 'path')]
     print("\nRegistered Routes:")
     for r in sorted(routes):
         print(f" - {r}")
