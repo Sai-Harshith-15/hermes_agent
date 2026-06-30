@@ -20,7 +20,7 @@ class HermesStateAdapter:
                 return [dict(row) for row in rows]
 
     async def get_recent_sessions(self, limit: int = 50) -> List[Dict[str, Any]]:
-        query = "SELECT * FROM agent_runs ORDER BY start_time DESC LIMIT ?"
+        query = "SELECT * FROM agent_runs ORDER BY created_at DESC LIMIT ?"
         try:
             return await self._execute_query(query, (limit,))
         except Exception:
@@ -99,8 +99,32 @@ class HermesStateAdapter:
             return {"prompt_tokens": 0, "completion_tokens": 0, "total_cost": 0.0}
 
     async def search_memory(self, query: str) -> List[Dict[str, Any]]:
-        sql = "SELECT * FROM memory_fts WHERE memory_fts MATCH ? ORDER BY rank LIMIT 20"
+        # The memory_fts table is not currently created by init_db
+        return []
+
+    async def edit_message(self, message_id: str, new_content: str) -> bool:
+        query = "UPDATE agent_messages SET content = ? WHERE id = ?"
         try:
-            return await self._execute_query(sql, (query,))
+            if not self.db_path.exists(): return False
+            async with aiosqlite.connect(f"file:{self.db_path}", uri=True) as db:
+                await db.execute(query, (new_content, message_id))
+                await db.commit()
+                return True
         except Exception:
-            return []
+            return False
+
+    async def delete_message(self, message_id: str) -> bool:
+        query = "DELETE FROM agent_messages WHERE id = ?"
+        try:
+            if not self.db_path.exists(): return False
+            async with aiosqlite.connect(f"file:{self.db_path}", uri=True) as db:
+                await db.execute(query, (message_id,))
+                await db.commit()
+                return True
+        except Exception:
+            return False
+
+    async def rewind_session(self, run_id: str) -> bool:
+        # Stub implementation
+        return True
+

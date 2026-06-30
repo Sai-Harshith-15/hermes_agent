@@ -1,6 +1,8 @@
 import subprocess
 import psutil
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from app.models.users import User
+from app.core.rbac import RequireRole
 
 router = APIRouter()
 
@@ -20,7 +22,7 @@ async def get_curator_status():
     return {"status": status}
 
 @router.post("/toggle")
-async def toggle_curator(action: str):
+async def toggle_curator(action: str, _user: User = Depends(RequireRole(["owner", "admin"]))):
     """
     Action should be 'pause' or 'resume'.
     """

@@ -119,7 +119,7 @@ export function VaultScreen() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm">
           <h4 className="text-gray-400 text-sm font-medium mb-1">Load Balancing</h4>
-          <p className="text-xl text-gray-100 font-semibold">simple-shuffle</p>
+          <p className="text-xl text-gray-100 font-semibold">default</p>
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm">
           <h4 className="text-gray-400 text-sm font-medium mb-1">Active Proxies</h4>
@@ -127,7 +127,7 @@ export function VaultScreen() {
         </div>
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-sm">
           <h4 className="text-gray-400 text-sm font-medium mb-1">Global Fallback</h4>
-          <p className="text-xl text-amber-400 font-semibold text-sm">Ollama (Gemma-4-12b)</p>
+          <p className="text-xl text-amber-400 font-semibold text-sm">None configured</p>
         </div>
       </div>
 

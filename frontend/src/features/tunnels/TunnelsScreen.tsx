@@ -11,7 +11,7 @@ export function TunnelsScreen() {
       .then(res => {
         if (res.url) {
           setTunnels(prev => [
-            { id: 1, name: 'cloudflare_tunnel', url: res.url, target: 'frontend:80', status: 'Online' },
+            { id: 1, name: 'primary_tunnel', url: res.url, target: 'frontend/backend', status: 'Online' },
             ...prev
           ]);
         }

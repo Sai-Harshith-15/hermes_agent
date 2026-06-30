@@ -14,7 +14,6 @@ _HERMES_AVAILABLE = shutil.which("hermes") is not None or bool(
         capture_output=True,
         timeout=5,
     ).returncode == 0
-    if True else False
 )
 
 if not _HERMES_AVAILABLE:

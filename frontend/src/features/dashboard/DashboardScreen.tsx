@@ -48,8 +48,8 @@ export function DashboardScreen() {
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Oracle A1 CPU" value={`${hostMetrics.cpu_usage || 0}%`} icon={Cpu} subtext={hostMetrics.daemon_status || "Online"} color="text-emerald-400" bgColor="bg-emerald-500/10" glow="shadow-emerald-500/5" />
-        <StatCard title="Memory (RAM)" value={`${hostMetrics.ram_used || 0} / ${hostMetrics.ram_total || 24}`} unit="GB" icon={Server} subtext="Ollama GGUF Loaded" color="text-indigo-400" bgColor="bg-indigo-500/10" glow="shadow-indigo-500/5" />
+        <StatCard title="Oracle A1 CPU" value={`${hostMetrics.cpu_usage || 0}%`} icon={Cpu} subtext={hostMetrics.daemon_status || "Offline"} color="text-emerald-400" bgColor="bg-emerald-500/10" glow="shadow-emerald-500/5" />
+        <StatCard title="Memory (RAM)" value={`${hostMetrics.ram_used || 0} / ${hostMetrics.ram_total || 24}`} unit="GB" icon={Server} subtext="System RAM" color="text-indigo-400" bgColor="bg-indigo-500/10" glow="shadow-indigo-500/5" />
         <StatCard title="Block Storage" value={`${hostMetrics.storage_used || 0} / ${hostMetrics.storage_total || 200}`} unit="GB" icon={HardDrive} subtext="SQLite & Models" color="text-amber-400" bgColor="bg-amber-500/10" glow="shadow-amber-500/5" />
         <StatCard title="Active API Keys" value={`${activeKeysCount}`} icon={Bot} subtext={`${apiKeys.length} keys in rotation`} color="text-cyan-400" bgColor="bg-cyan-500/10" glow="shadow-cyan-500/5" />
       </div>

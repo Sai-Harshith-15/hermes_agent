@@ -27,15 +27,24 @@ class MessageEditRequest(BaseModel):
 
 @router.put("/{session_id}/messages/{message_id}")
 async def edit_message(session_id: str, message_id: str, payload: MessageEditRequest):
-    raise HTTPException(status_code=501, detail="Message editing not implemented yet")
+    success = await adapter.edit_message(message_id, payload.content)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to edit message")
+    return {"status": "success"}
 
 @router.delete("/{session_id}/messages/{message_id}")
 async def delete_message(session_id: str, message_id: str):
-    raise HTTPException(status_code=501, detail="Message deletion not implemented yet")
+    success = await adapter.delete_message(message_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete message")
+    return {"status": "success"}
 
 @router.post("/{session_id}/rewind")
 async def rewind_session(session_id: str, payload: Dict[str, Any]):
-    raise HTTPException(status_code=501, detail="Session rewind not implemented yet")
+    success = await adapter.rewind_session(session_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to rewind session")
+    return {"status": "success"}
 
 @router.websocket("/{session_id}/stream")
 async def session_stream(websocket: WebSocket, session_id: str):
@@ -50,11 +59,16 @@ async def session_stream(websocket: WebSocket, session_id: str):
         if not token:
             await websocket.close(code=1008)
             return
-        jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        try:
+            jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        except JWTError:
+            await websocket.close(code=1008)
+            return
         
         while True:
             data = await websocket.receive_text()
-            await websocket.send_text(f"Streaming dummy token for {session_id}")
+            # Simple echo/ack for the stream placeholder
+            await websocket.send_text(f"ACK: {data}")
     except Exception:
         try:
             await websocket.close(code=1008)

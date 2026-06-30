@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import select
+from app.models.users import User
+from app.core.rbac import RequireRole
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from app.db.database import get_db
@@ -13,14 +15,14 @@ async def get_warden_events(session: AsyncSession = Depends(get_db), limit: int 
     return result.scalars().all()
 
 @router.post("/trigger_probe")
-async def trigger_key_probe():
+async def trigger_key_probe(_user: User = Depends(RequireRole(["owner", "admin"]))):
     from app.services.warden.key_probe import probe_all_keys
     import asyncio
     asyncio.create_task(probe_all_keys())
     return {"status": "Key probe triggered"}
 
 @router.post("/trigger_loop_detection")
-async def trigger_loop_detection():
+async def trigger_loop_detection(_user: User = Depends(RequireRole(["owner", "admin"]))):
     from app.services.warden.loop_detector import detect_loops
     import asyncio
     asyncio.create_task(detect_loops())
@@ -32,7 +34,7 @@ class HealPayload(BaseModel):
     action: str
 
 @router.post("/heal")
-async def trigger_healing(payload: HealPayload):
+async def trigger_healing(payload: HealPayload, _user: User = Depends(RequireRole(["owner", "admin"]))):
     from app.services.warden.healer import apply_healing_action
     result = await apply_healing_action(payload.event_id, payload.action)
     return result

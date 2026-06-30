@@ -1,20 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Terminal, Bot, 
-  Database, Globe, Settings, Search, Plus, 
-  CheckCircle, Edit3, Save,
-  Tv, Link, Shield, ToggleLeft
-} from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { hermesApi } from '../../lib/api/hermes_api';
+import { ToggleLeft } from 'lucide-react';
 import { controlApi } from '../../lib/api/control_api';
-import { fetchApi, getConfigYaml, updateConfigYaml, getEnv, updateEnv, runOp } from '../../lib/api/client';
-const Editor = React.lazy(() => import('@monaco-editor/react'));
+import { fetchApi } from '../../lib/api/client';
 
 export function ChatScreen() {
-  const [messages, setMessages] = useState<any[]>([
-    { role: 'system', content: 'You are securely connected to the Local SWE Supervisor.' }
-  ]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
 
   useEffect(() => {

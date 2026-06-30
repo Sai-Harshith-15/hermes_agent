@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 from app.db.database import get_db
 from app.models.extra import PairingRequest
+from app.models.users import User
+from app.core.rbac import RequireRole
 import os
 import json
 import secrets
@@ -24,7 +26,7 @@ class PairingApproveRequest(BaseModel):
     user_id: str
 
 @router.post("/setup")
-async def setup_messaging(req: MessagingSetupRequest):
+async def setup_messaging(req: MessagingSetupRequest, _user: User = Depends(RequireRole(["owner", "admin"]))):
     env_path = adapter.hermes_dir / ".env"
     if not env_path.exists():
         env_path.touch()
@@ -41,7 +43,7 @@ async def setup_messaging(req: MessagingSetupRequest):
     return {"status": "success", "message": f"{req.platform} configured successfully"}
 
 @router.post("/restart")
-async def restart_gateway():
+async def restart_gateway(_user: User = Depends(RequireRole(["owner", "admin"]))):
     try:
         subprocess.Popen(['pkill', '-f', 'hermes-gateway'])
         return {"status": "success", "message": "Gateway restart triggered successfully"}
@@ -56,7 +58,7 @@ async def get_pairing_requests(session: AsyncSession = Depends(get_db)):
     return [{"user_id": req.user_id, "platform": req.platform, "username": req.username, "status": req.status} for req in requests]
 
 @router.post("/pairing/{user_id}/approve")
-async def approve_pairing(user_id: str, session: AsyncSession = Depends(get_db)):
+async def approve_pairing(user_id: str, session: AsyncSession = Depends(get_db), _user: User = Depends(RequireRole(["owner", "admin"]))):
     stmt = select(PairingRequest).where(PairingRequest.user_id == user_id)
     result = await session.execute(stmt)
     req = result.scalars().first()
@@ -81,10 +83,7 @@ async def get_themes():
         themes.append({"id": entry.stem, "name": entry.stem.replace('-', ' ').title()})
         
     if not themes:
-        themes = [
-            {"id": "cyberpunk", "name": "Cyberpunk Neon", "bg_color": "#09090b", "accent": "#10b981"},
-            {"id": "dracula", "name": "Dracula Deep", "bg_color": "#282a36", "accent": "#bd93f9"}
-        ]
+        themes = []
         
     return themes
 

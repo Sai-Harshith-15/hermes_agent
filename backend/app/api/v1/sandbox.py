@@ -56,7 +56,11 @@ async def websocket_terminal(websocket: WebSocket, container_id: str = "hermes-a
         if not token:
             await websocket.close(code=1008)
             return
-        jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        try:
+            jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        except JWTError:
+            await websocket.close(code=1008)
+            return
     except Exception:
         try:
             await websocket.close(code=1008)

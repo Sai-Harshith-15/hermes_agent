@@ -1,8 +1,10 @@
 import os
 import json
 import secrets
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
+from app.models.users import User
+from app.core.rbac import RequireRole
 from typing import List, Optional
 
 router = APIRouter()
@@ -47,7 +49,7 @@ async def get_shell_hooks():
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/shell")
-async def create_shell_hook(hook: ShellHook):
+async def create_shell_hook(hook: ShellHook, _user: User = Depends(RequireRole(["owner", "admin"]))):
     path = get_shell_hooks_file_path()
     try:
         with open(path, "r") as f:
@@ -60,7 +62,7 @@ async def create_shell_hook(hook: ShellHook):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/shell/{event}")
-async def delete_shell_hook(event: str):
+async def delete_shell_hook(event: str, _user: User = Depends(RequireRole(["owner", "admin"]))):
     path = get_shell_hooks_file_path()
     try:
         with open(path, "r") as f:
@@ -73,7 +75,7 @@ async def delete_shell_hook(event: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/shell/{event}/approve")
-async def approve_shell_hook(event: str):
+async def approve_shell_hook(event: str, _user: User = Depends(RequireRole(["owner", "admin"]))):
     path = get_shell_hooks_file_path()
     try:
         with open(path, "r") as f:
@@ -99,7 +101,7 @@ def get_webhooks():
         return []
 
 @router.post("/webhooks")
-def create_webhook(req: WebhookCreateRequest):
+def create_webhook(req: WebhookCreateRequest, _user: User = Depends(RequireRole(["owner", "admin"]))):
     path = get_webhooks_file_path()
     hooks = []
     try:
@@ -126,7 +128,7 @@ def create_webhook(req: WebhookCreateRequest):
     return {"status": "success", "hook": new_hook, "one_time_secret": secret}
 
 @router.post("/webhooks/{hook_id}/toggle")
-def toggle_webhook(hook_id: str):
+def toggle_webhook(hook_id: str, _user: User = Depends(RequireRole(["owner", "admin"]))):
     path = get_webhooks_file_path()
     try:
         with open(path, "r") as f:

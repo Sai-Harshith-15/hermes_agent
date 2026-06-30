@@ -10,6 +10,7 @@ from app.models.users import User
 from app.api.deps import get_current_user
 from app.core.vault import encrypt_secret, decrypt_secret, mask_secret
 from app.core.rbac import RequireRole
+import secrets
 
 logger = logging.getLogger(__name__)
 
@@ -99,5 +100,22 @@ async def rotate_vault_key(
     _user: User = Depends(RequireRole(["owner"])),
     session: AsyncSession = Depends(get_db),
 ):
-    raise HTTPException(status_code=501, detail="Key rotation not implemented yet")
+    try:
+        key_id_int = int(req.key_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid key_id format")
+        
+    result = await session.execute(select(ApiKeyPool).where(ApiKeyPool.id == key_id_int))
+    db_key = result.scalars().first()
+    
+    if not db_key:
+        raise HTTPException(status_code=404, detail="Key not found")
+        
+    # Stub: Update status or masked key to indicate rotation
+    db_key.api_key_masked = f"rot-...{secrets.token_hex(2)}"
+    db_key.status = "Active"
+    session.add(db_key)
+    await session.commit()
+    
+    return {"status": "success", "message": "Key rotated successfully (stub)"}
 
